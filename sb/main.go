@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "github.com/shapeblock/sb-cli/cmd"
+import "github.com/shapeblock/sb-cli/sb/cmd"
 
 func main() {
 	cmd.Execute()

@@ -5,10 +5,20 @@ Copyright © 2021 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 
 	"github.com/spf13/cobra"
 )
+
+type Cluster struct {
+	Uuid   string `json:"uuid"`
+	Domain string `json:"domain"`
+	Name   string `json:"name"`
+	Cloud  string `json:"cloud"`
+}
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
@@ -21,7 +31,21 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("list called")
+		resp, err := http.Get("http://localhost:9000/api/clusters")
+		if err != nil {
+			fmt.Println("No response from request")
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body) // response body is []byte
+		// snippet only
+		var clusters []Cluster
+		if err := json.Unmarshal(body, &clusters); err != nil { // Parse []byte to go struct pointer
+			fmt.Println("Can not unmarshal JSON")
+		}
+		fmt.Println(PrettyPrint(clusters))
+		if err != nil {
+			fmt.Println("Unable to parse response")
+		}
 	},
 }
 
@@ -37,4 +61,9 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func PrettyPrint(i interface{}) string {
+	s, _ := json.MarshalIndent(i, "", "\t")
+	return string(s)
 }
