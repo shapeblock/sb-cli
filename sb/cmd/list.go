@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +44,17 @@ to quickly create a Cobra application.`,
 		if err := json.Unmarshal(body, &clusters); err != nil { // Parse []byte to go struct pointer
 			fmt.Println("Can not unmarshal JSON")
 		}
-		fmt.Println(PrettyPrint(clusters))
+		//fmt.Println(PrettyPrint(clusters))
+		t := table.NewWriter()
+		t.SetOutputMirror(os.Stdout)
+		t.SetStyle(table.StyleLight)
+		t.AppendHeader(table.Row{"Id", "Name", "Cloud"})
+		for _, cluster := range clusters {
+			t.AppendRow([]interface{}{cluster.Uuid, cluster.Name, cluster.Cloud})
+			t.AppendSeparator()
+		}
+		t.AppendSeparator()
+		t.Render()
 		if err != nil {
 			fmt.Println("Unable to parse response")
 		}
