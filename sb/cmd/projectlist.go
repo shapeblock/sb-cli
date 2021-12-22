@@ -26,15 +26,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type Cluster struct {
-	Uuid   string `json:"uuid"`
-	Domain string `json:"domain"`
-	Name   string `json:"name"`
-	Cloud  string `json:"cloud"`
+var ClusterId string
+
+type Project struct {
+	Uuid        string `json:"uuid"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
 
-// listCmd represents the list command
-var listCmd = &cobra.Command{
+// projectlistCmd represents the projectlist command
+var projectlistCmd = &cobra.Command{
 	Use:   "list",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
@@ -44,24 +45,24 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		resp, err := http.Get("http://localhost:9000/api/clusters")
+		resp, err := http.Get(fmt.Sprintf("http://localhost:9000/api/clusters/%s/projects", ClusterId))
 		if err != nil {
 			fmt.Println("No response from request")
 		}
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body) // response body is []byte
 		// snippet only
-		var clusters []Cluster
-		if err := json.Unmarshal(body, &clusters); err != nil { // Parse []byte to go struct pointer
+		var projects []Project
+		if err := json.Unmarshal(body, &projects); err != nil { // Parse []byte to go struct pointer
 			fmt.Println("Can not unmarshal JSON")
 		}
 		//fmt.Println(PrettyPrint(clusters))
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
 		t.SetStyle(table.StyleLight)
-		t.AppendHeader(table.Row{"Id", "Name", "Cloud"})
-		for _, cluster := range clusters {
-			t.AppendRow([]interface{}{cluster.Uuid, cluster.Name, cluster.Cloud})
+		t.AppendHeader(table.Row{"Id", "Name", "Description"})
+		for _, project := range projects {
+			t.AppendRow([]interface{}{project.Uuid, project.Name, project.Description})
 			t.AppendSeparator()
 		}
 		t.AppendSeparator()
@@ -73,15 +74,7 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	clustersCmd.AddCommand(listCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// listCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	projectsCmd.AddCommand(projectlistCmd)
+	projectlistCmd.Flags().StringVarP(&ClusterId, "cluster", "c", "", "The cluster ID for which the projects need to be listed")
+	projectlistCmd.MarkFlagRequired("cluster")
 }
