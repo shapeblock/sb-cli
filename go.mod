@@ -8,4 +8,7 @@ require (
 	github.com/pivotal/kpack v0.5.0
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/viper v1.10.0
+	k8s.io/api v0.21.3
+	k8s.io/apimachinery v0.21.3
+	k8s.io/client-go v0.21.3
 )

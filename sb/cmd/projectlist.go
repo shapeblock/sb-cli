@@ -21,18 +21,22 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/shapeblock/sb-cli/sb/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-var ClusterId string
 
 type Project struct {
 	Uuid        string `json:"uuid"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+}
+
+type Kubeconfig struct {
+	Raw string `json:"kubeconfig"`
 }
 
 // projectlistCmd represents the projectlist command
@@ -75,8 +79,8 @@ to quickly create a Cobra application.`,
 		var projects []Project
 		if err := json.Unmarshal(body, &projects); err != nil { // Parse []byte to go struct pointer
 			fmt.Println("Can not unmarshal JSON")
+			return
 		}
-		//fmt.Println(PrettyPrint(clusters))
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
 		t.SetStyle(table.StyleLight)
@@ -89,6 +93,46 @@ to quickly create a Cobra application.`,
 		t.Render()
 		if err != nil {
 			fmt.Println("Unable to parse response")
+		}
+
+		// if cluster credentials are not found
+		if !viper.IsSet(ClusterId) {
+			// api call to get cluster credentials
+			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/clusters/%s/kubeconfig", sbUrl, ClusterId), nil)
+			if err != nil {
+				fmt.Println(err)
+			}
+			token := viper.GetString("token")
+			if token == "" {
+				fmt.Println("User not logged in")
+				return
+			}
+			req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+			resp, err := client.Do(req)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body) // response body is []byte
+			if err != nil {
+				fmt.Println(err)
+			}
+			var kubeconfig Kubeconfig
+			if err := json.Unmarshal(body, &kubeconfig); err != nil { // Parse []byte to go struct pointer
+				fmt.Println("Can not unmarshal JSON")
+				return
+			}
+			// store configuration in viper
+			viper.Set(ClusterId, kubeconfig.Raw)
+			viper.WriteConfig()
+			kubeconfigFile := path.Join(config.GetConfigDir(), fmt.Sprintf("%s.yaml", ClusterId))
+			if _, err := os.Stat(kubeconfigFile); os.IsNotExist(err) {
+				err = ioutil.WriteFile(kubeconfigFile, []byte(kubeconfig.Raw), 0600)
+				if err != nil {
+					panic(err)
+				}
+			}
 		}
 	},
 }

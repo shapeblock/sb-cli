@@ -28,18 +28,18 @@ func getUserHomeDir() string {
 	return usr.HomeDir
 }
 
-func getConfigDir() string {
+func GetConfigDir() string {
 	return path.Join(getUserHomeDir(), ".config")
 }
 
 func GetConfigPath() string {
-	return path.Join(getConfigDir(), "sb.json")
+	return path.Join(GetConfigDir(), "sb.json")
 }
 
 //Init sets the config files location and attempts to read it in.
 func Init() {
-	if _, err := os.Stat(getConfigDir()); os.IsNotExist(err) {
-		err = os.Mkdir(getConfigDir(), os.ModeDir|0755)
+	if _, err := os.Stat(GetConfigDir()); os.IsNotExist(err) {
+		err = os.Mkdir(GetConfigDir(), os.ModeDir|0755)
 		if err != nil {
 			panic(err)
 		}
