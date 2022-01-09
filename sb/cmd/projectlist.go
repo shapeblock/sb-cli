@@ -24,6 +24,7 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var ClusterId string
@@ -45,10 +46,29 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		resp, err := http.Get(fmt.Sprintf("http://localhost:9000/api/clusters/%s/projects", ClusterId))
-		if err != nil {
-			fmt.Println("No response from request")
+
+		sbUrl := viper.GetString("endpoint")
+		if sbUrl == "" {
+			fmt.Println("User not logged in")
+			return
 		}
+
+		client := &http.Client{}
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/api/clusters/%s/projects", sbUrl, ClusterId), nil)
+		if err != nil {
+			fmt.Println(err)
+		}
+		token := viper.GetString("token")
+		if token == "" {
+			fmt.Println("User not logged in")
+			return
+		}
+		req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Println(err)
+		}
+
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body) // response body is []byte
 		// snippet only
