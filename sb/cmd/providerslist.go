@@ -52,7 +52,7 @@ to quickly create a Cobra application.`,
 			return
 		}
 		client := &http.Client{}
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/providers", sbUrl), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/providers/", sbUrl), nil)
 		if err != nil {
 			fmt.Println(err)
 		}
