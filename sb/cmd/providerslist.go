@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -27,11 +26,13 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Cluster struct {
-	Uuid   string `json:"uuid"`
-	Domain string `json:"domain"`
-	Name   string `json:"name"`
-	Cloud  string `json:"cloud"`
+type Provider struct {
+	UUID      string `json:"uuid"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+	Name      string `json:"name"`
+	Cloud     string `json:"cloud"`
+	User      int    `json:"user"`
 }
 
 // listCmd represents the list command
@@ -51,7 +52,7 @@ to quickly create a Cobra application.`,
 			return
 		}
 		client := &http.Client{}
-		req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/api/clusters", sbUrl), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/providers", sbUrl), nil)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -60,6 +61,7 @@ to quickly create a Cobra application.`,
 			fmt.Println("User not logged in")
 			return
 		}
+		req.Header.Add("Content-Type", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 		resp, err := client.Do(req)
 		if err != nil {
@@ -67,19 +69,17 @@ to quickly create a Cobra application.`,
 		}
 
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body) // response body is []byte
-		// snippet only
-		var clusters []Cluster
-		if err := json.Unmarshal(body, &clusters); err != nil { // Parse []byte to go struct pointer
-			fmt.Println("Can not unmarshal JSON")
+		var providers []Provider
+		if err := json.NewDecoder(resp.Body).Decode(&providers); err != nil {
+			fmt.Println("Error decoding JSON:", err)
+			return
 		}
-		//fmt.Println(PrettyPrint(clusters))
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
 		t.SetStyle(table.StyleLight)
 		t.AppendHeader(table.Row{"Id", "Name", "Cloud"})
-		for _, cluster := range clusters {
-			t.AppendRow([]interface{}{cluster.Uuid, cluster.Name, cluster.Cloud})
+		for _, provider := range providers {
+			t.AppendRow([]interface{}{provider.UUID, provider.Name, provider.Cloud})
 			t.AppendSeparator()
 		}
 		t.AppendSeparator()
@@ -91,7 +91,7 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	clustersCmd.AddCommand(listCmd)
+	providersCmd.AddCommand(listCmd)
 
 	// Here you will define your flags and configuration settings.
 

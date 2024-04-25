@@ -1,6 +1,5 @@
 /*
 Copyright © 2021 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -9,17 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"mime/multipart"
 	"net/http"
+	"strings"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-type UserToken struct {
-	Token string `json:"token"`
-}
 
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
@@ -32,13 +27,22 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		//TODO: check if url starts with https://
+
+		endpoint := viper.GetString("endpoint")
+
 		prompt := promptui.Prompt{
 			Label:   "Shapeblock server",
-			Default: "dashboard.shapeblock.com",
+			Default: endpoint,
 		}
 
-		sbUrl, err := prompt.Run()
+		url, err := prompt.Run()
+
+		var sbUrl string
+		if strings.HasPrefix(url, "http") {
+			sbUrl = url
+		} else {
+			sbUrl = fmt.Sprintf("https://%s", url)
+		}
 
 		if err != nil {
 			fmt.Printf("Prompt failed %v\n", err)
@@ -75,33 +79,38 @@ to quickly create a Cobra application.`,
 		viper.Set("endpoint", sbUrl)
 		viper.Set("token", token)
 		viper.WriteConfig()
-		fmt.Printf("Logged in to %s as %s successfully", sbUrl, userName)
+		fmt.Printf("Logged in to %s as %s successfully.\n", sbUrl, userName)
 	},
 }
 
 func SbLogin(sbUrl string, username string, password string) (string, error) {
 
-	url := fmt.Sprintf("https://%s/auth-token/", sbUrl)
+	url := fmt.Sprintf("%s/api/auth/login/", sbUrl)
 	method := "POST"
 
-	payload := &bytes.Buffer{}
-	writer := multipart.NewWriter(payload)
-	_ = writer.WriteField("username", username)
-	_ = writer.WriteField("password", password)
-	err := writer.Close()
+	payload := struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}{
+		Email:    username,
+		Password: password,
+	}
+
+	// Marshal the data to JSON
+	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("Error marshaling data: %v\n", err)
 		return "", err
 	}
 
 	client := &http.Client{}
-	req, err := http.NewRequest(method, url, payload)
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(jsonData))
 
 	if err != nil {
 		fmt.Println(err)
 		return "", err
 	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Content-Type", "application/json")
 	res, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
@@ -115,13 +124,19 @@ func SbLogin(sbUrl string, username string, password string) (string, error) {
 		return "", err
 	}
 
-	tokenData := UserToken{}
-	err = json.Unmarshal([]byte(body), &tokenData)
-	if err != nil {
-		fmt.Println(err)
+	var data map[string]string
+	if err := json.Unmarshal(body, &data); err != nil {
+		fmt.Printf("Error parsing JSON: %v\n", err)
 		return "", err
 	}
-	return tokenData.Token, nil
+
+	// Extract the "key" value
+	apiKey, exists := data["key"]
+	if !exists {
+		fmt.Println("Key not found in the response")
+		return "", err
+	}
+	return apiKey, nil
 }
 
 func init() {

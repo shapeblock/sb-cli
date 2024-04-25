@@ -36,7 +36,7 @@ func GetConfigPath() string {
 	return path.Join(GetConfigDir(), "sb.json")
 }
 
-//Init sets the config files location and attempts to read it in.
+// Init sets the config files location and attempts to read it in.
 func Init() {
 	if _, err := os.Stat(GetConfigDir()); os.IsNotExist(err) {
 		err = os.Mkdir(GetConfigDir(), os.ModeDir|0755)
@@ -53,7 +53,7 @@ func Init() {
 	}
 
 	viper.SetConfigFile(GetConfigPath())
-	// viper.SetDefault("endpoint", "https://shapeblock.com")
+	viper.SetDefault("endpoint", "https://shapeblock.com")
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
