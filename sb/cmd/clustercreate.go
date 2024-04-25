@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -64,10 +65,19 @@ func selectProvider(providers []Provider) {
 		Selected: "\U0001F3C1 {{ .Name | red | cyan }}",
 	}
 
+	searcher := func(input string, index int) bool {
+		provider := providers[index]
+		name := strings.Replace(strings.ToLower(provider.Name), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input)
+	}
+
 	prompt := promptui.Select{
 		Label:     "Select Provider",
 		Items:     providers,
 		Templates: templates,
+		Searcher:  searcher,
 	}
 
 	_, result, err := prompt.Run()
