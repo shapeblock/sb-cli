@@ -80,13 +80,13 @@ func selectProvider(providers []Provider) {
 		Searcher:  searcher,
 	}
 
-	_, result, err := prompt.Run()
+	index, _, err := prompt.Run()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
 		return
 	}
 
-	fmt.Printf("You chose %q\n", result)
+	fmt.Printf("You chose %s\n", providers[index].UUID)
 }
 
 func init() {
