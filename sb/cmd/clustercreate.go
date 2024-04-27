@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -12,17 +14,22 @@ import (
 	"github.com/spf13/viper"
 )
 
+type Node struct {
+	Name string `json:"name"`
+	Size string `json:"size"`
+}
+
+type Cluster struct {
+	Name          string `json:"name"`
+	CloudProvider string `json:"cloud_provider"`
+	Region        string `json:"region"`
+	Nodes         []Node `json:"nodes"`
+}
+
 var selectCmd = &cobra.Command{
 	Use:   "selectProvider",
 	Short: "Select a provider from a list fetched via an API",
-	Run: func(cmd *cobra.Command, args []string) {
-		providers, err := fetchProviders()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error fetching providers: %v\n", err)
-			return
-		}
-		selectProvider(providers)
-	},
+	Run:   execute,
 }
 
 func fetchProviders() ([]Provider, error) {
@@ -57,7 +64,7 @@ func fetchProviders() ([]Provider, error) {
 	return providers, nil
 }
 
-func selectProvider(providers []Provider) {
+func selectProvider(providers []Provider) Provider {
 	templates := &promptui.SelectTemplates{
 		Label:    "{{ . }}?",
 		Active:   "\U0001F449 {{ .Name | cyan }} ({{ .Cloud | red }})",
@@ -83,10 +90,215 @@ func selectProvider(providers []Provider) {
 	index, _, err := prompt.Run()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
+		return Provider{}
+	}
+
+	return providers[index]
+}
+
+func execute(cmd *cobra.Command, args []string) {
+	cluster := Cluster{}
+
+	// Prompt for cluster name
+	cluster.Name = prompt("Enter the cluster name", true)
+
+	providers, err := fetchProviders()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching providers: %v\n", err)
 		return
 	}
 
-	fmt.Printf("You chose %s\n", providers[index].UUID)
+	provider := selectProvider(providers)
+	// Prompt for cloud provider
+	cluster.CloudProvider = provider.UUID
+	// Prompt for region
+	cluster.Region = fetchAndSelectRegion(provider.Cloud)
+
+	sizes := fetchNodeSizes(provider.Cloud)
+	// Prompt for nodes
+	for {
+		node := Node{
+			Name: prompt("Enter node name", true),
+			Size: selectNodeSize(sizes),
+		}
+		cluster.Nodes = append(cluster.Nodes, node)
+
+		if prompt("Add another node? (y/n)", false) != "y" {
+			break
+		}
+	}
+
+	jsonData, err := json.Marshal(cluster)
+	if err != nil {
+		fmt.Println("Error marshaling JSON:", err)
+		return
+	}
+
+	// API call
+	response, err := makeAPICall(jsonData)
+	if err != nil {
+		fmt.Println("Error calling API:", err)
+		return
+	}
+	fmt.Println("Response from API:", response)
+}
+
+func prompt(label string, required bool) string {
+	validate := func(input string) error {
+		if required && input == "" {
+			return fmt.Errorf("this field cannot be empty")
+		}
+		return nil
+	}
+
+	prompt := promptui.Prompt{
+		Label:    label,
+		Validate: validate,
+	}
+
+	result, err := prompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		return ""
+	}
+
+	return result
+}
+
+func makeAPICall(jsonData []byte) (string, error) {
+	sbUrl := viper.GetString("endpoint")
+	if sbUrl == "" {
+		fmt.Println("User not logged in")
+	}
+
+	token := viper.GetString("token")
+	if token == "" {
+		fmt.Println("User not logged in")
+	}
+
+	req, err := http.NewRequest("POST", sbUrl, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
+}
+
+func fetchAndSelectRegion(cloud string) string {
+	sbUrl := viper.GetString("endpoint")
+	if sbUrl == "" {
+		fmt.Println("User not logged in")
+	}
+
+	url := fmt.Sprintf("%s/api/providers/region-choices/%s/", sbUrl, cloud)
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Failed to fetch regions:", err)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Failed to read response body:", err)
+		return ""
+	}
+
+	var data map[string][][]string
+	if err := json.Unmarshal(body, &data); err != nil {
+		fmt.Println("Error unmarshalling JSON:", err)
+		return ""
+	}
+
+	choices := data["choices"]
+
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ index . 1 }}?",
+		Active:   "\U0001F449 {{ index . 1 | cyan }}",
+		Inactive: "  {{ index . 1 | cyan }}",
+		Selected: "\U0001F3C1 {{ index . 1 | red | cyan }}",
+	}
+
+	selectPrompt := promptui.Select{
+		Label:     "Select Region",
+		Items:     choices,
+		Templates: templates,
+	}
+
+	index, _, err := selectPrompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		return ""
+	}
+
+	return choices[index][0]
+}
+
+func selectNodeSize(sizes [][]string) string {
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ index . 1 }}?",
+		Active:   "\U0001F449 {{ index . 1 | cyan }}",
+		Inactive: "  {{ index . 1 | cyan }}",
+		Selected: "\U0001F3C1 {{ index . 1 | red | cyan }}",
+	}
+
+	selectPrompt := promptui.Select{
+		Label:     "Select Size",
+		Items:     sizes,
+		Templates: templates,
+	}
+
+	index, _, err := selectPrompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		return ""
+	}
+
+	return sizes[index][0]
+}
+
+func fetchNodeSizes(cloud string) [][]string {
+	sbUrl := viper.GetString("endpoint")
+	if sbUrl == "" {
+		fmt.Println("User not logged in")
+	}
+
+	url := fmt.Sprintf("%s/api/providers/size-choices/%s/", sbUrl, cloud)
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Failed to fetch regions:", err)
+		return nil
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Failed to read response body:", err)
+		return nil
+	}
+
+	var data map[string][][]string
+	if err := json.Unmarshal(body, &data); err != nil {
+		fmt.Println("Error unmarshalling JSON:", err)
+		return nil
+	}
+
+	return data["choices"]
 }
 
 func init() {
