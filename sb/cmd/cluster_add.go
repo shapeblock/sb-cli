@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,8 +26,8 @@ type Cluster struct {
 }
 
 var selectCmd = &cobra.Command{
-	Use:   "selectProvider",
-	Short: "Select a provider from a list fetched via an API",
+	Use:   "add",
+	Short: "Create a new cluster",
 	Run:   execute,
 }
 
@@ -135,7 +134,7 @@ func execute(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	response, err := makeAPICall(jsonData)
+	response, err := makeAPICall("/api/clusters/", "POST", jsonData)
 	if err != nil {
 		fmt.Println("Error calling API:", err)
 		return
@@ -163,40 +162,6 @@ func prompt(label string, required bool) string {
 	}
 
 	return result
-}
-
-func makeAPICall(jsonData []byte) (string, error) {
-	sbUrl := viper.GetString("endpoint")
-	if sbUrl == "" {
-		fmt.Println("User not logged in")
-	}
-
-	token := viper.GetString("token")
-	if token == "" {
-		fmt.Println("User not logged in")
-	}
-
-	req, err := http.NewRequest("POST", sbUrl, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", err
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return string(body), nil
 }
 
 func fetchAndSelectRegion(cloud string) string {
@@ -302,5 +267,5 @@ func fetchNodeSizes(cloud string) [][]string {
 }
 
 func init() {
-	rootCmd.AddCommand(selectCmd)
+	clustersCmd.AddCommand(selectCmd)
 }
