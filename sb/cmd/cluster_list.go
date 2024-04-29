@@ -26,17 +26,25 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Provider struct {
-	UUID      string `json:"uuid"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	Name      string `json:"name"`
-	Cloud     string `json:"cloud"`
-	User      int    `json:"user"`
+type ClusterDetail struct {
+	UUID          string        `json:"uuid"`
+	Name          string        `json:"name"`
+	CloudProvider string        `json:"cloud_provider"`
+	Region        string        `json:"region"`
+	User          int           `json:"user"`
+	Nodes         []ClusterNode `json:"nodes"`
+}
+
+// Node represents the structure of the node information in a cluster
+type ClusterNode struct {
+	Name string `json:"name"`
+	UUID string `json:"uuid"`
+	Size string `json:"size"`
+	User int    `json:"user"`
 }
 
 // listCmd represents the list command
-var listCmd = &cobra.Command{
+var clusterListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
@@ -52,7 +60,7 @@ to quickly create a Cobra application.`,
 			return
 		}
 		client := &http.Client{}
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/providers/", sbUrl), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -69,17 +77,17 @@ to quickly create a Cobra application.`,
 		}
 
 		defer resp.Body.Close()
-		var providers []Provider
-		if err := json.NewDecoder(resp.Body).Decode(&providers); err != nil {
+		var clusters []ClusterDetail
+		if err := json.NewDecoder(resp.Body).Decode(&clusters); err != nil {
 			fmt.Println("Error decoding JSON:", err)
 			return
 		}
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
 		t.SetStyle(table.StyleLight)
-		t.AppendHeader(table.Row{"Id", "Name", "Cloud"})
-		for _, provider := range providers {
-			t.AppendRow([]interface{}{provider.UUID, provider.Name, provider.Cloud})
+		t.AppendHeader(table.Row{"UUID", "Name", "Region", "Node Count"})
+		for _, cluster := range clusters {
+			t.AppendRow([]interface{}{cluster.UUID, cluster.Name, cluster.Region, len(cluster.Nodes)})
 			t.AppendSeparator()
 		}
 		t.AppendSeparator()
@@ -91,5 +99,5 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	providersCmd.AddCommand(listCmd)
+	clustersCmd.AddCommand(clusterListCmd)
 }

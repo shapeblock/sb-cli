@@ -16,29 +16,19 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 
-	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-type Provider struct {
-	UUID      string `json:"uuid"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	Name      string `json:"name"`
-	Cloud     string `json:"cloud"`
-	User      int    `json:"user"`
-}
-
 // listCmd represents the list command
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "A brief description of your command",
+var providerDeleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete a provider",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
@@ -52,44 +42,61 @@ to quickly create a Cobra application.`,
 			return
 		}
 		client := &http.Client{}
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/providers/", sbUrl), nil)
-		if err != nil {
-			fmt.Println(err)
-		}
 		token := viper.GetString("token")
 		if token == "" {
 			fmt.Println("User not logged in")
 			return
 		}
+
+		providers, err := fetchProviders()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching providers: %v\n", err)
+			return
+		}
+
+		provider := selectProvider(providers)
+
+		confirmationPrompt := promptui.Prompt{
+			Label:     "Delete Resource",
+			IsConfirm: true,
+			Default:   "",
+		}
+
+		_, err = confirmationPrompt.Run()
+
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return
+		}
+
+		req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/api/providers/%s/", sbUrl, provider.UUID), nil)
+		if err != nil {
+			fmt.Println(err)
+		}
 		req.Header.Add("Content-Type", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+
 		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		defer resp.Body.Close()
-		var providers []Provider
-		if err := json.NewDecoder(resp.Body).Decode(&providers); err != nil {
-			fmt.Println("Error decoding JSON:", err)
-			return
+		defer resp.Body.Close() // Ensure the response body is closed
+
+		// Check the status code of the response
+		if resp.StatusCode == http.StatusNoContent {
+			fmt.Println("Provider deleted successfully.")
+		} else if resp.StatusCode == http.StatusUnauthorized {
+			fmt.Println("Authorization failed. Check your token.")
+		} else if resp.StatusCode == http.StatusNotFound {
+			fmt.Println("Provider not found.")
+		} else {
+			fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 		}
-		t := table.NewWriter()
-		t.SetOutputMirror(os.Stdout)
-		t.SetStyle(table.StyleLight)
-		t.AppendHeader(table.Row{"Id", "Name", "Cloud"})
-		for _, provider := range providers {
-			t.AppendRow([]interface{}{provider.UUID, provider.Name, provider.Cloud})
-			t.AppendSeparator()
-		}
-		t.AppendSeparator()
-		t.Render()
-		if err != nil {
-			fmt.Println("Unable to parse response")
-		}
+
 	},
 }
 
 func init() {
-	providersCmd.AddCommand(listCmd)
+	providersCmd.AddCommand(providerDeleteCmd)
 }

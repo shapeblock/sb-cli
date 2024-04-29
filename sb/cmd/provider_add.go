@@ -66,6 +66,7 @@ func createProvider(cmd *cobra.Command, args []string) {
 		fmt.Println("error marshaling JSON: %w", err)
 	}
 
+	// TODO: replace makeAPICall with actual api call
 	_, err = makeAPICall("/api/providers/", "POST", jsonData)
 	if err != nil {
 		fmt.Println("Error calling API:", err)

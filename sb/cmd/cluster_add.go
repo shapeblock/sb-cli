@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -134,12 +135,52 @@ func execute(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	response, err := makeAPICall("/api/clusters/", "POST", jsonData)
-	if err != nil {
-		fmt.Println("Error calling API:", err)
+	sbUrl := viper.GetString("endpoint")
+	if sbUrl == "" {
+		fmt.Println("User not logged in")
 		return
 	}
-	fmt.Println("Response from API:", response)
+
+	token := viper.GetString("token")
+	if token == "" {
+		fmt.Println("User not logged in")
+		return
+	}
+
+	fullUrl := sbUrl + "/api/clusters/"
+
+	req, err := http.NewRequest("POST", fullUrl, bytes.NewBuffer(jsonData))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Set the necessary headers
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+
+	// Send the request using the default client
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	defer resp.Body.Close() // Ensure the response body is closed
+
+	// Check the status code of the response
+	if resp.StatusCode == http.StatusCreated {
+		fmt.Println("New cluster created successfully.")
+	} else if resp.StatusCode == http.StatusUnauthorized {
+		fmt.Println("Authorization failed. Check your token.")
+	} else if resp.StatusCode == http.StatusBadRequest {
+		fmt.Println("Unable to create cluster, bad request.")
+	} else if resp.StatusCode == http.StatusInternalServerError {
+		fmt.Println("Unable to create cluster, internal server error.")
+	} else {
+		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
+	}
+
+	// TODO: print tekton logs here.
 }
 
 func prompt(label string, required bool) string {
