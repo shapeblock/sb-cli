@@ -29,12 +29,6 @@ import (
 var providerDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a provider",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		sbUrl := viper.GetString("endpoint")
 		if sbUrl == "" {
@@ -57,7 +51,7 @@ to quickly create a Cobra application.`,
 		provider := selectProvider(providers)
 
 		confirmationPrompt := promptui.Prompt{
-			Label:     "Delete Resource",
+			Label:     "Delete Provider",
 			IsConfirm: true,
 			Default:   "",
 		}
@@ -81,9 +75,8 @@ to quickly create a Cobra application.`,
 			fmt.Println(err)
 		}
 
-		defer resp.Body.Close() // Ensure the response body is closed
+		defer resp.Body.Close()
 
-		// Check the status code of the response
 		if resp.StatusCode == http.StatusNoContent {
 			fmt.Println("Provider deleted successfully.")
 		} else if resp.StatusCode == http.StatusUnauthorized {
