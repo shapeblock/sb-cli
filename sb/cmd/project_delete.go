@@ -14,7 +14,7 @@ import (
 
 var projectDeleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a provider",
+	Short: "Delete a project",
 	Run:   projectDelete,
 }
 

@@ -25,7 +25,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// listCmd represents the list command
 var providerDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a provider",
