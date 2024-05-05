@@ -7,7 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -60,6 +63,38 @@ func fetchClusters() ([]ClusterDetail, error) {
 	}
 
 	return clusters, nil
+}
+
+func selectCluster(clusters []ClusterDetail) ClusterDetail {
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "\U0001F449 {{ .Name | cyan }} ({{ .Cloud | red }})",
+		Inactive: "  {{ .Name | cyan }} ({{ .Cloud | red }})",
+		Selected: "\U0001F3C1 {{ .Name | red | cyan }}",
+	}
+
+	searcher := func(input string, index int) bool {
+		cluster := clusters[index]
+		name := strings.Replace(strings.ToLower(cluster.Name), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input)
+	}
+
+	prompt := promptui.Select{
+		Label:     "Select Cluster",
+		Items:     clusters,
+		Templates: templates,
+		Searcher:  searcher,
+	}
+
+	index, _, err := prompt.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
+		return ClusterDetail{}
+	}
+
+	return clusters[index]
 }
 
 var clustersCmd = &cobra.Command{

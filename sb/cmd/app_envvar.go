@@ -11,40 +11,43 @@ import (
 	"github.com/spf13/viper"
 )
 
-type UpdateClusterPayload struct {
-	Nodes []Node `json:"nodes"`
+type EnvVar struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
-var scaleUpCmd = &cobra.Command{
-	Use:   "up",
-	Short: "Add nodes to a cluster",
-	Run:   scaleUp,
+type EnvVarPayload struct {
+	EnvVars []EnvVar `json:"env_vars"`
 }
 
-func scaleUp(cmd *cobra.Command, args []string) {
+var appEnvVarAddCmd = &cobra.Command{
+	Use:   "add",
+	Short: "Add an env var.",
+	Run:   appEnvVarAdd,
+}
 
-	clusters, err := fetchClusters()
+func appEnvVarAdd(cmd *cobra.Command, args []string) {
+	apps, err := fetchApps()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error fetching clusters: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error fetching apps: %v\n", err)
 		return
 	}
 
-	cluster := selectCluster(clusters)
-	var nodes []Node
+	app := selectApp(apps)
+	var envVars []EnvVar
 
-	sizes := fetchNodeSizes(cluster.Cloud)
 	for {
-		node := Node{
-			Name: prompt("Enter node name", true),
-			Size: selectNodeSize(sizes),
+		envVar := EnvVar{
+			Key:   prompt("Enter env var name", true),
+			Value: prompt("Enter env var value", true),
 		}
-		nodes = append(nodes, node)
+		envVars = append(envVars, envVar)
 
-		if prompt("Add another node? (y/n)", false) != "y" {
+		if prompt("Add another env var? (y/n)", false) != "y" {
 			break
 		}
 	}
-	payload := UpdateClusterPayload{Nodes: nodes}
+	payload := EnvVarPayload{EnvVars: envVars}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
@@ -64,43 +67,37 @@ func scaleUp(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	fullUrl := fmt.Sprintf("%s/api/clusters/%s/", sbUrl, cluster.UUID)
+	fullUrl := fmt.Sprintf("%s/api/apps/%s/env-vars/", sbUrl, app.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	// Set the necessary headers
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
-	// Send the request using the default client
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	defer resp.Body.Close() // Ensure the response body is closed
+	defer resp.Body.Close()
 
-	// Check the status code of the response
-	if resp.StatusCode == http.StatusCreated {
-		fmt.Println("Cluster scaled successfully.")
+	if resp.StatusCode == http.StatusOK {
+		fmt.Println("Env var added successfully.")
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		fmt.Println("Authorization failed. Check your token.")
 	} else if resp.StatusCode == http.StatusBadRequest {
-		fmt.Println("Unable to create cluster, bad request.")
+		fmt.Println("Unable to add env var, bad request.")
 	} else if resp.StatusCode == http.StatusInternalServerError {
-		fmt.Println("Unable to create cluster, internal server error.")
+		fmt.Println("Unable to add env var, internal server error.")
 	} else {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
-
-	// TODO: print tekton logs here.
-
 }
 
 func init() {
-	scaleClusterCmd.AddCommand(scaleUpCmd)
+	appEnvVarCmd.AddCommand(appEnvVarAddCmd)
 }

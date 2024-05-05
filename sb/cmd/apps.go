@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -52,6 +55,38 @@ func fetchApps() ([]App, error) {
 	return apps, nil
 }
 
+func selectApp(apps []App) App {
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "\U0001F449 {{ .Name | cyan }}",
+		Inactive: "  {{ .Name | cyan }}",
+		Selected: "\U0001F3C1 {{ .Name | red | cyan }}",
+	}
+
+	searcher := func(input string, index int) bool {
+		app := apps[index]
+		name := strings.Replace(strings.ToLower(app.Name), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input)
+	}
+
+	prompt := promptui.Select{
+		Label:     "Select App",
+		Items:     apps,
+		Templates: templates,
+		Searcher:  searcher,
+	}
+
+	index, _, err := prompt.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
+		return App{}
+	}
+
+	return apps[index]
+}
+
 var appsCmd = &cobra.Command{
 	Use:   "apps",
 	Short: "Manage apps",
@@ -60,6 +95,15 @@ var appsCmd = &cobra.Command{
 	},
 }
 
+var appEnvVarCmd = &cobra.Command{
+	Use:   "env",
+	Short: "Manage app env vars.",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Error: must also specify an action like add or delete.")
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(appsCmd)
+	appsCmd.AddCommand(appEnvVarCmd)
 }
