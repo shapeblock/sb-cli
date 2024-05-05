@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-type App struct {
+type Service struct {
 	UUID    string `json:"uuid"`
 	Name    string `json:"name"`
 	Stack   string `json:"stack"`
@@ -20,14 +20,14 @@ type App struct {
 	Project string `json:"project"`
 }
 
-func fetchApps() ([]App, error) {
+func fetchServices() ([]Service, error) {
 
 	sbUrl := viper.GetString("endpoint")
 	if sbUrl == "" {
 		fmt.Println("User not logged in")
 	}
 
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/", sbUrl), nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/services/", sbUrl), nil)
 
 	token := viper.GetString("token")
 	if token == "" {
@@ -44,16 +44,16 @@ func fetchApps() ([]App, error) {
 	}
 	defer resp.Body.Close()
 
-	var apps []App
-	if err := json.NewDecoder(resp.Body).Decode(&apps); err != nil {
+	var services []Service
+	if err := json.NewDecoder(resp.Body).Decode(&services); err != nil {
 		return nil, err
 	}
 
-	return apps, nil
+	return services, nil
 }
 
-var appsCmd = &cobra.Command{
-	Use:   "apps",
+var servicesCmd = &cobra.Command{
+	Use:   "services",
 	Short: "Manage apps",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like list or add.")
@@ -61,5 +61,5 @@ var appsCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(appsCmd)
+	rootCmd.AddCommand(servicesCmd)
 }
