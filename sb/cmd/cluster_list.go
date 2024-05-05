@@ -16,66 +16,23 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
-
-type ClusterDetail struct {
-	UUID          string        `json:"uuid"`
-	Name          string        `json:"name"`
-	CloudProvider string        `json:"cloud_provider"`
-	Region        string        `json:"region"`
-	User          int           `json:"user"`
-	Nodes         []ClusterNode `json:"nodes"`
-	Cloud         string        `json:"cloud"`
-}
-
-// Node represents the structure of the node information in a cluster
-type ClusterNode struct {
-	Name string `json:"name"`
-	UUID string `json:"uuid"`
-	Size string `json:"size"`
-	User int    `json:"user"`
-}
 
 var clusterListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all clusters",
 	Run: func(cmd *cobra.Command, args []string) {
-		sbUrl := viper.GetString("endpoint")
-		if sbUrl == "" {
-			fmt.Println("User not logged in")
-			return
-		}
-		client := &http.Client{}
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
+		clusters, err := fetchClusters()
 		if err != nil {
-			fmt.Println(err)
-		}
-		token := viper.GetString("token")
-		if token == "" {
-			fmt.Println("User not logged in")
+			fmt.Fprintf(os.Stderr, "Error fetching clusters: %v\n", err)
 			return
-		}
-		req.Header.Add("Content-Type", "application/json")
-		req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Println(err)
 		}
 
-		defer resp.Body.Close()
-		var clusters []ClusterDetail
-		if err := json.NewDecoder(resp.Body).Decode(&clusters); err != nil {
-			fmt.Println("Error decoding JSON:", err)
-			return
-		}
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
 		t.SetStyle(table.StyleLight)

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,38 +15,6 @@ var projectDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a project",
 	Run:   projectDelete,
-}
-
-func fetchProjects() ([]Project, error) {
-
-	sbUrl := viper.GetString("endpoint")
-	if sbUrl == "" {
-		fmt.Println("User not logged in")
-	}
-
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/projects/", sbUrl), nil)
-
-	token := viper.GetString("token")
-	if token == "" {
-		fmt.Println("User not logged in")
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var projects []Project
-	if err := json.NewDecoder(resp.Body).Decode(&projects); err != nil {
-		return nil, err
-	}
-
-	return projects, nil
 }
 
 func selectProject(projects []Project) Project {

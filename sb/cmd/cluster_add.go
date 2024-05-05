@@ -32,38 +32,6 @@ var selectCmd = &cobra.Command{
 	Run:   execute,
 }
 
-func fetchProviders() ([]Provider, error) {
-
-	sbUrl := viper.GetString("endpoint")
-	if sbUrl == "" {
-		fmt.Println("User not logged in")
-	}
-
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/providers/", sbUrl), nil)
-
-	token := viper.GetString("token")
-	if token == "" {
-		fmt.Println("User not logged in")
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var providers []Provider
-	if err := json.NewDecoder(resp.Body).Decode(&providers); err != nil {
-		return nil, err
-	}
-
-	return providers, nil
-}
-
 func selectProvider(providers []Provider) Provider {
 	templates := &promptui.SelectTemplates{
 		Label:    "{{ . }}?",

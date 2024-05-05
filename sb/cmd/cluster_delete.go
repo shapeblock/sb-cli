@@ -31,7 +31,7 @@ func clusterDelete(cmd *cobra.Command, args []string) {
 
 	clusters, err := fetchClusters()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error fetching projects: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error fetching clusters: %v\n", err)
 		return
 	}
 

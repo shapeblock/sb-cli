@@ -16,64 +16,25 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
-
-type Provider struct {
-	UUID      string `json:"uuid"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	Name      string `json:"name"`
-	Cloud     string `json:"cloud"`
-	User      int    `json:"user"`
-}
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "List all cloud providers",
 	Run: func(cmd *cobra.Command, args []string) {
-		sbUrl := viper.GetString("endpoint")
-		if sbUrl == "" {
-			fmt.Println("User not logged in")
-			return
-		}
-		client := &http.Client{}
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/providers/", sbUrl), nil)
+
+		providers, err := fetchProviders()
 		if err != nil {
-			fmt.Println(err)
-		}
-		token := viper.GetString("token")
-		if token == "" {
-			fmt.Println("User not logged in")
+			fmt.Fprintf(os.Stderr, "Error fetching providers: %v\n", err)
 			return
-		}
-		req.Header.Add("Content-Type", "application/json")
-		req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Println(err)
 		}
 
-		defer resp.Body.Close()
-		var providers []Provider
-		if err := json.NewDecoder(resp.Body).Decode(&providers); err != nil {
-			fmt.Println("Error decoding JSON:", err)
-			return
-		}
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
 		t.SetStyle(table.StyleLight)
