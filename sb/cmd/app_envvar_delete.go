@@ -11,22 +11,25 @@ import (
 	"github.com/spf13/viper"
 )
 
-type EnvVar struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
+type EnvVarDeletePayload struct {
+	EnvVars []string `json:"delete"`
 }
 
-type EnvVarPayload struct {
-	EnvVars []EnvVar `json:"env_vars"`
+func GetEnvVarKeys(envVars []*EnvVarSelect) []string {
+	var vars []string
+	for _, envVar := range envVars {
+		vars = append(vars, envVar.Key)
+	}
+	return vars
 }
 
-var appEnvVarAddCmd = &cobra.Command{
-	Use:   "add",
-	Short: "Add an env var.",
-	Run:   appEnvVarAdd,
+var appEnvVarDeleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete an env var.",
+	Run:   appEnvVarDelete,
 }
 
-func appEnvVarAdd(cmd *cobra.Command, args []string) {
+func appEnvVarDelete(cmd *cobra.Command, args []string) {
 	apps, err := fetchApps()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching apps: %v\n", err)
@@ -34,20 +37,21 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 	}
 
 	app := selectApp(apps)
-	var envVars []EnvVar
 
-	for {
-		envVar := EnvVar{
-			Key:   prompt("Enter env var name", true),
-			Value: prompt("Enter env var value", true),
-		}
-		envVars = append(envVars, envVar)
-
-		if prompt("Add another env var? (y/n)", false) != "y" {
-			break
-		}
+	appDetail, err := fetchAppDetail(app.UUID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching app detail: %v\n", err)
+		return
 	}
-	payload := EnvVarPayload{EnvVars: envVars}
+
+	envVars := ConvertEnvVarsToSelect(appDetail.EnvVars)
+	envVars, err = selectEnvVars(0, envVars)
+	if err != nil {
+		fmt.Printf("Selection failed %v\n", err)
+		return
+	}
+
+	payload := EnvVarDeletePayload{EnvVars: GetEnvVarKeys(envVars)}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
@@ -67,37 +71,42 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	fullUrl := fmt.Sprintf("%s/api/apps/%s/env-vars/", sbUrl, app.UUID)
+	fullUrl := fmt.Sprintf("%s/api/apps/%s/env-vars/", sbUrl, appDetail.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println(err)
 	}
 
+	// Set the necessary headers
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
+	// Send the request using the default client
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	defer resp.Body.Close()
+	defer resp.Body.Close() // Ensure the response body is closed
 
+	// Check the status code of the response
 	if resp.StatusCode == http.StatusOK {
-		fmt.Println("Env var added successfully.")
+		fmt.Println("Env vars deleted successfully.")
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		fmt.Println("Authorization failed. Check your token.")
 	} else if resp.StatusCode == http.StatusBadRequest {
-		fmt.Println("Unable to add env var, bad request.")
+		fmt.Println("Unable to delete env vars, bad request.")
 	} else if resp.StatusCode == http.StatusInternalServerError {
-		fmt.Println("Unable to add env var, internal server error.")
+		fmt.Println("Unable to delete env vars, internal server error.")
 	} else {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
+
+	fmt.Fprintf(os.Stdout, "Fetched: %v\n", appDetail)
 }
 
 func init() {
-	appEnvVarCmd.AddCommand(appEnvVarAddCmd)
+	appEnvVarCmd.AddCommand(appEnvVarDeleteCmd)
 }
