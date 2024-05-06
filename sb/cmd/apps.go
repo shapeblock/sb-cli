@@ -103,7 +103,16 @@ var appEnvVarCmd = &cobra.Command{
 	},
 }
 
+var appVolumeCmd = &cobra.Command{
+	Use:   "vol",
+	Short: "Manage app volumes.",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Error: must also specify an action like add or delete.")
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(appsCmd)
 	appsCmd.AddCommand(appEnvVarCmd)
+	appsCmd.AddCommand(appVolumeCmd)
 }
