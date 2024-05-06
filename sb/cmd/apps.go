@@ -64,6 +64,17 @@ func ConvertEnvVarsToSelect(envVars []EnvVar) []*EnvVarSelect {
 	return selectEnvVars
 }
 
+func ConvertSelectToEnvVars(envVars []*EnvVarSelect) []EnvVar {
+	var selectEnvVars []EnvVar
+	for _, envVar := range envVars {
+		selectEnvVars = append(selectEnvVars, EnvVar{
+			Key:   envVar.Key,
+			Value: envVar.Value,
+		})
+	}
+	return selectEnvVars
+}
+
 func fetchAppDetail(appUuid string) (AppDetail, error) {
 
 	sbUrl := viper.GetString("endpoint")
@@ -199,6 +210,57 @@ func selectEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSelect, e
 		// toggle selection on this variable and run the function again.
 		chosenVar.IsSelected = !chosenVar.IsSelected
 		return selectEnvVars(selectionIdx, allVars)
+	}
+
+	var selectedVars []*EnvVarSelect
+	for _, v := range allVars {
+		if v.IsSelected {
+			selectedVars = append(selectedVars, v)
+		}
+	}
+	return selectedVars, nil
+}
+
+func selectUpdatedEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSelect, error) {
+	const doneKey = "Done"
+	if len(allVars) > 0 && allVars[0].Key != doneKey {
+		var vars = []*EnvVarSelect{
+			{
+				Key:   doneKey,
+				Value: "Complete Selection",
+			},
+		}
+		allVars = append(vars, allVars...)
+	}
+
+	templates := &promptui.SelectTemplates{
+		Label:    `{{if .IsSelected}}✔{{end}} {{ .Key }} - {{ .Value }}`,
+		Active:   "→ {{if .IsSelected}}✔{{end}} {{ .Key | cyan }}",
+		Inactive: "{{if .IsSelected}}✔{{end}} {{ .Key }}",
+	}
+
+	envVarSelectPrompt := promptui.Select{
+		Label:        "Select Environment Variables",
+		Items:        allVars,
+		Templates:    templates,
+		Size:         5,
+		CursorPos:    selectedPos,
+		HideSelected: true,
+	}
+
+	selectionIdx, _, err := envVarSelectPrompt.Run()
+	if err != nil {
+		return nil, fmt.Errorf("prompt failed: %w", err)
+	}
+
+	chosenVar := allVars[selectionIdx]
+
+	if chosenVar.Key != doneKey {
+		// If the user selected something other than "Done",
+		// toggle selection on this variable and run the function again.
+		chosenVar.IsSelected = !chosenVar.IsSelected
+		allVars[selectionIdx].Value = prompt("Enter the env var value", true)
+		return selectUpdatedEnvVars(selectionIdx, allVars)
 	}
 
 	var selectedVars []*EnvVarSelect

@@ -42,6 +42,10 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 			break
 		}
 	}
+	if len(envVars) == 0 {
+		fmt.Println("No env vars changed")
+		return
+	}
 	payload := EnvVarPayload{EnvVars: envVars}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
