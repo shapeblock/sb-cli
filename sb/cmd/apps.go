@@ -296,8 +296,17 @@ var appVolumeCmd = &cobra.Command{
 	},
 }
 
+var deployCmd = &cobra.Command{
+	Use:   "deploy",
+	Short: "Manage app deployment.",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Error: must also specify an action like create or list.")
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(appsCmd)
 	appsCmd.AddCommand(appEnvVarCmd)
 	appsCmd.AddCommand(appVolumeCmd)
+	appsCmd.AddCommand(deployCmd)
 }
