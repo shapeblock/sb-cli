@@ -11,21 +11,20 @@ import (
 	"net/http"
 	"os"
 	"github.com/spf13/cobra"
+	//"github.com/manifoldco/promptui"
 	"github.com/spf13/viper"
 )
-
-type EnvVarDeletePayload1 struct {
-	EnvVars []string `json:"delete"`
+type BuildEnvVarDeletePayload struct {
+	BuildEnvVars []string `json:"delete"`
 }
-
-func GetEnvVarKeys1(envVars []*EnvVarSelect) []string {
+func GetbuiltEnvVarKeys(BuildenvVars []*BuildEnvVarSelect) []string {
 	var vars []string
-	for _, envVar := range envVars {
-		vars = append(vars, envVar.Key)
+	for _, BuildenvVar := range BuildenvVars {
+		vars = append(vars, BuildenvVar.Key)
+
 	}
 	return vars
 }
-
 
 var buildEnvvarDeleteCmd = &cobra.Command{
 	Use:   "delete",
@@ -47,19 +46,23 @@ func buildEnvVarDelete(cmd *cobra.Command,args [] string){
 		fmt.Fprintf(os.Stderr, "Error fetching app detail: %v\n", err)
 		return
 	}
+	fmt.Println("Fetched app detail:", appDetail)
+	fmt.Println("Input data for ConvertBuildEnvVarsToSelect:", appDetail.BuildEnvVars)
 
-	envVars := ConvertEnvVarsToSelect(appDetail.EnvVars)
-	envVars, err = selectEnvVars(0, envVars)
+	BuildenvVars := ConvertBuildEnvVarsToSelect(appDetail.BuildEnvVars)
+	//fmt.Println("Converted build environment variables:", BuildenvVars)
+	BuildenvVars, err = selectBuildEnvVars(0, BuildenvVars)
+	fmt.Println("Converted build environment variables:", BuildenvVars)
 	if err != nil {
 		fmt.Printf("Selection failed %v\n", err)
 		return
 	}
-	if len(envVars) == 0 {
+	if len(BuildenvVars) == 0 {
 		fmt.Println("No env vars deleted")
 		return
 	}
-
-	payload := EnvVarDeletePayload1{EnvVars: GetEnvVarKeys1(envVars)}
+    
+	payload := BuildEnvVarDeletePayload{BuildEnvVars: GetbuiltEnvVarKeys(BuildenvVars)}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
@@ -101,13 +104,13 @@ func buildEnvVarDelete(cmd *cobra.Command,args [] string){
 
 	// Check the status code of the response
 	if resp.StatusCode == http.StatusOK {
-		fmt.Println("Env vars deleted successfully.")
+		fmt.Println("Build Env vars deleted successfully.")
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		fmt.Println("Authorization failed. Check your token.")
 	} else if resp.StatusCode == http.StatusBadRequest {
-		fmt.Println("Unable to delete env vars, bad request.")
+		fmt.Println("Unable to delete  build env vars, bad request.")
 	} else if resp.StatusCode == http.StatusInternalServerError {
-		fmt.Println("Unable to delete env vars, internal server error.")
+		fmt.Println("Unable to delete  build env vars, internal server error.")
 	} else {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
@@ -117,7 +120,7 @@ func buildEnvVarDelete(cmd *cobra.Command,args [] string){
 }
 
 func init() {
-	buildCmd.AddCommand(buildEnvvarDeleteCmd)
+	appBuiltEnvCmd.AddCommand(buildEnvvarDeleteCmd)
 
 	// Here you will define your flags and configuration settings.
 

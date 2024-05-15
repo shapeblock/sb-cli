@@ -42,7 +42,7 @@ func createDeployment(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-
+	
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 

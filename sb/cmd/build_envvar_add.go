@@ -1,7 +1,3 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
@@ -13,17 +9,17 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-type EnvVarPayload1 struct {
-	EnvVars []EnvVar `json:"env_vars"`
+type BuildEnvPayload struct{
+	BuildEnvVars []BuildEnvVar `json:"build_env_vars"`
 }
 
-var buildEnvvarAddCmd = &cobra.Command{
+var buildEnvAddCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Add build env variables",
-	Run: buildEnvVarAdd,
+	Run: buildEnvAdd,
 	}
 
-func buildEnvVarAdd(cmd *cobra.Command, args []string){
+func buildEnvAdd(cmd *cobra.Command, args []string){
 
 		apps, err := fetchApps()
 		if err != nil {
@@ -32,25 +28,29 @@ func buildEnvVarAdd(cmd *cobra.Command, args []string){
 		}
 	
 		app := selectApp(apps)
-		var envVars []EnvVar
+		var BuildenvVars []BuildEnvVar
 	
 		for {
-			envVar := EnvVar{
-				Key:   prompt("Enter env var name", true),
-				Value: prompt("Enter env var value", true),
+			BuildenvVar := BuildEnvVar{
+				Key:   prompt("Enter  build env var name", true),
+				Value: prompt("Enter  build env var value", true),
 			}
-			envVars = append(envVars, envVar)
+			BuildenvVars = append(BuildenvVars, BuildenvVar)
 	
 			if prompt("Add another env var? (y/n)", false) != "y" {
 				break
 			}
 		}
-		if len(envVars) == 0 {
+		if len(BuildenvVars) == 0 {
 			fmt.Println("No env vars changed")
 			return
+
 		}
-		payload := EnvVarPayload1{EnvVars: envVars}
+		payload := BuildEnvPayload{BuildEnvVars:  BuildenvVars}
 		jsonData, err := json.Marshal(payload)
+
+		fmt.Println("Data being sent to the server:")
+		fmt.Println(string(jsonData))
 		if err != nil {
 			fmt.Println("Error marshaling JSON:", err)
 			return
@@ -102,7 +102,7 @@ func buildEnvVarAdd(cmd *cobra.Command, args []string){
 	
 
 func init() {
-	buildCmd.AddCommand(buildEnvvarAddCmd)
+	appBuiltEnvCmd.AddCommand(buildEnvAddCmd)
 
 	// Here you will define your flags and configuration settings.
 

@@ -12,9 +12,11 @@ import (
 )
 
 type Volume struct {
+	UUID        string `json:"uuid"`
 	Name      string `json:"name"`
 	MountPath string `json:"mount_path"`
 	Size      int    `json:"size"`
+
 }
 
 type VolumePayload struct {

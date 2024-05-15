@@ -28,7 +28,18 @@ type EnvVar struct {
 	Value string `json:"value"`
 }
 
+type BuildEnvVar struct{
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 type EnvVarSelect struct {
+	Key        string `json:"key"`
+	Value      string `json:"value"`
+	IsSelected bool
+}
+
+type BuildEnvVarSelect struct {
 	Key        string `json:"key"`
 	Value      string `json:"value"`
 	IsSelected bool
@@ -50,6 +61,7 @@ type AppDetail struct {
 	Project ProjectDetail `json:"project"`
 	EnvVars []EnvVar      `json:"env_vars"`
 	Volumes []Volume      `json:"volumes"`
+	BuildEnvVars []BuildEnvVar `json:"build_env_vars"`
 }
 
 func ConvertEnvVarsToSelect(envVars []EnvVar) []*EnvVarSelect {
@@ -63,7 +75,34 @@ func ConvertEnvVarsToSelect(envVars []EnvVar) []*EnvVarSelect {
 	}
 	return selectEnvVars
 }
+func ConvertBuildEnvVarsToSelect(BuildenvVars []BuildEnvVar) []*BuildEnvVarSelect {
+	var selectBuildEnvVars []*BuildEnvVarSelect
+	for _, envVar := range BuildenvVars {
+		selectBuildEnvVars = append(selectBuildEnvVars, &BuildEnvVarSelect{
+			Key:        envVar.Key,
+			Value:      envVar.Value,
+			IsSelected: false,
+		})
+	}
+	return selectBuildEnvVars
+}
 
+
+/*
+func ConvertVolumesToSelect(volumes [] Volume) []*VolumeSelect{
+	var selectedVolumes []*VolumeSelect
+	for _, vol:=range volumes{
+		selectedVolumes=append(selectedVolumes, &VolumeSelect{
+			Name: vol.Name,
+			MountPath: vol.MountPath,
+			Size: vol.Size,
+			IsSelected: false,
+		})
+	}
+	return selectedVolumes
+}
+
+*/
 func ConvertSelectToEnvVars(envVars []*EnvVarSelect) []EnvVar {
 	var selectEnvVars []EnvVar
 	for _, envVar := range envVars {
@@ -138,6 +177,37 @@ func fetchApps() ([]App, error) {
 
 	return apps, nil
 }
+
+func fetchVolume(appUuid string) ([]Volume, error) {
+
+	sbUrl := viper.GetString("endpoint")
+	if sbUrl == "" {
+		fmt.Println("User not logged in")
+	}
+	req, _ := http.NewRequest("GET",fmt.Sprintf("%s/api/apps/%s/volumes/", sbUrl,appUuid), nil)
+
+	token := viper.GetString("token")
+	if token == "" {
+		fmt.Println("User not logged in")
+	}	
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var vol []Volume
+	if err := json.NewDecoder(resp.Body).Decode(&vol); err != nil {
+		return nil, err
+	}
+
+	return vol, nil
+}
+
 
 func selectApp(apps []App) App {
 	templates := &promptui.SelectTemplates{
@@ -220,6 +290,109 @@ func selectEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSelect, e
 	}
 	return selectedVars, nil
 }
+func selectBuildEnvVars(selectedPos int, allVars []*BuildEnvVarSelect) ([]*BuildEnvVarSelect, error) {
+	const doneKey = "Done"
+	if len(allVars) > 0 && allVars[0].Key != doneKey {
+		var vars = []*BuildEnvVarSelect{
+			{
+				Key:   doneKey,
+				Value: "Complete Selection",
+			},
+		}
+		allVars = append(vars, allVars...)
+	}
+
+	templates := &promptui.SelectTemplates{
+		Label:    `{{if .IsSelected}}✔{{end}} {{ .Key }} - {{ .Value }}`,
+		Active:   "→ {{if .IsSelected}}✔{{end}} {{ .Key | cyan }}",
+		Inactive: "{{if .IsSelected}}✔{{end}} {{ .Key }}",
+	}
+
+	prompt := promptui.Select{
+		Label:        "Select Build  Environment Variables",
+		Items:        allVars,
+		Templates:    templates,
+		Size:         5,
+		CursorPos:    selectedPos,
+		HideSelected: true,
+	}
+
+	selectionIdx, _, err := prompt.Run()
+	if err != nil {
+		return nil, fmt.Errorf("prompt failed: %w", err)
+	}
+
+	chosenVar := allVars[selectionIdx]
+
+	if chosenVar.Key != doneKey {
+		// If the user selected something other than "Done",
+		// toggle selection on this variable and run the function again.
+		chosenVar.IsSelected = !chosenVar.IsSelected
+		return selectBuildEnvVars(selectionIdx, allVars)
+	}
+
+	var BuildselectedVars []*BuildEnvVarSelect
+	for _, v := range allVars {
+		if v.IsSelected {
+			BuildselectedVars = append(BuildselectedVars, v)
+		}
+	}
+	return BuildselectedVars, nil
+}
+
+
+/*func selectedVolumes(selectedPos int, allVars []*VolumeSelect) ([]*VolumeSelect, error) {
+	const doneKey = "Done"
+	if len(allVars) > 0 && allVars[0].Name != doneKey {
+		var vars = []*VolumeSelect{
+			{
+				Name:   doneKey,
+				MountPath: "Complete Selection",
+			},
+		}
+		allVars = append(vars, allVars...)
+	}
+
+	templates := &promptui.SelectTemplates{
+		Label:    `{{if .IsSelected}}✔{{end}} {{ .Name }} - {{ .Value }}`,
+		Active:   "→ {{if .IsSelected}}✔{{end}} {{ .Name | cyan }}",
+		Inactive: "{{if .IsSelected}}✔{{end}} {{ .Name }}",
+	}
+
+	prompt := promptui.Select{
+		Label:        "Select Environment Variables",
+		Items:        allVars,
+		Templates:    templates,
+		Size:         9,
+		CursorPos:    selectedPos,
+		HideSelected: true,
+	}
+
+	selectionIdx, _, err := prompt.Run()
+	if err != nil {
+		return nil, fmt.Errorf("prompt failed: %w", err)
+	}
+
+	chosenVar := allVars[selectionIdx]
+
+	if chosenVar.Name != doneKey {
+		// If the user selected something other than "Done",
+		// toggle selection on this variable and run the function again.
+		chosenVar.IsSelected = !chosenVar.IsSelected
+		return VolumeSelect(selectionIdx, allVars)
+	}
+
+	var selectedVars []*EnvVarSelect
+	for _, v := range allVars {
+		if v.IsSelected {
+			selectedVars = append(selectedVars, v)
+		}
+	}
+	return selectedVars, nil
+}
+*/
+
+
 
 func selectUpdatedEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSelect, error) {
 	const doneKey = "Done"
@@ -304,9 +477,28 @@ var deployCmd = &cobra.Command{
 	},
 }
 
+var appSecretCmd = &cobra.Command{
+	Use:   "secret",
+	Short: "Manage Secrets",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Error: must also specify an action like create or list or delete.")
+	},
+}
+
+var appBuiltEnvCmd = &cobra.Command{
+	Use:   "build-env",
+	Short: "Manage Build Env",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Error: must also specify an action like create or list or delete.")
+	},
+}
+
+
 func init() {
 	rootCmd.AddCommand(appsCmd)
 	appsCmd.AddCommand(appEnvVarCmd)
 	appsCmd.AddCommand(appVolumeCmd)
 	appsCmd.AddCommand(deployCmd)
+	appsCmd.AddCommand(appSecretCmd)
+	appsCmd.AddCommand(appBuiltEnvCmd)
 }

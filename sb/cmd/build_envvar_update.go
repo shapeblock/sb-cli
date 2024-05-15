@@ -1,9 +1,4 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
-
 import (
 	"fmt"
 	"bytes"
@@ -93,7 +88,7 @@ func buildEnvVarUpdate(cmd *cobra.Command,args [] string){
 	}
 }
 func init() {
-	buildCmd.AddCommand(buildEnvvarUpdateCmd)
+	appBuiltEnvCmd.AddCommand(buildEnvvarUpdateCmd)
 
 	// Here you will define your flags and configuration settings.
 
