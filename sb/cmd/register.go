@@ -83,7 +83,7 @@ to quickly create a Cobra application.`,
 		}
 
 		if password1!=password2{
-			fmt.Println("Password Mismatch")
+			fmt.Println("Password Mismatch, please try again")
 			return
 		}
 

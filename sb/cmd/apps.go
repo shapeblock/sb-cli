@@ -77,10 +77,10 @@ func ConvertEnvVarsToSelect(envVars []EnvVar) []*EnvVarSelect {
 }
 func ConvertBuildEnvVarsToSelect(BuildenvVars []BuildEnvVar) []*BuildEnvVarSelect {
 	var selectBuildEnvVars []*BuildEnvVarSelect
-	for _, envVar := range BuildenvVars {
+	for _, BuildenvVar := range BuildenvVars {
 		selectBuildEnvVars = append(selectBuildEnvVars, &BuildEnvVarSelect{
-			Key:        envVar.Key,
-			Value:      envVar.Value,
+			Key:        BuildenvVar.Key,
+			Value:      BuildenvVar.Value,
 			IsSelected: false,
 		})
 	}
@@ -208,6 +208,45 @@ func fetchVolume(appUuid string) ([]Volume, error) {
 	return vol, nil
 }
 
+func fetchSecret(appUuid string) ([]Secret, error) {
+
+	sbUrl := viper.GetString("endpoint")
+	if sbUrl == "" {
+		fmt.Println("User not logged in")
+	}
+	req, _ := http.NewRequest("GET",fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl,appUuid), nil)
+
+	token := viper.GetString("token")
+	if token == "" {
+		fmt.Println("User not logged in")
+	}	
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var sec []Secret
+	if err := json.NewDecoder(resp.Body).Decode(&sec); err != nil {
+		return nil, err
+	}
+
+	return sec, nil
+}
+
+//function for masking the secret value
+
+func maskValue(value string) string {
+	maxLength:=4
+	if len(value) > maxLength{
+		return value[:maxLength] + "..."
+	}
+	return value
+}
 
 func selectApp(apps []App) App {
 	templates := &promptui.SelectTemplates{
