@@ -99,6 +99,7 @@ func selectCluster(clusters []ClusterDetail) ClusterDetail {
 
 var clustersCmd = &cobra.Command{
 	Use:   "clusters",
+	Aliases: []string{"cluster"}, 
 	Short: "Manage clusters",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like list or add.")

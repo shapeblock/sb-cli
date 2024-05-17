@@ -24,7 +24,7 @@ func appSecretList(cmd *cobra.Command, args []string) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleLight)
-	t.AppendHeader(table.Row{"Name", "Key","Value"})
+	t.AppendHeader(table.Row{"App Name","Key"})
 	
 	for _, app := range apps {
 		sec, err := fetchSecret(app.UUID)
@@ -33,8 +33,7 @@ func appSecretList(cmd *cobra.Command, args []string) {
 			continue
 		}
 		for _, secret := range sec {
-			maskedValue:=maskValue(secret.Value)
-			t.AppendRow([]interface{}{app.Name,secret.Name,secret.Key, maskedValue})
+			t.AppendRow([]interface{}{app.Name,secret.Key})
 			t.AppendSeparator()
 		}
 	}

@@ -52,6 +52,7 @@ func fetchProjects() ([]Project, error) {
 
 var projectsCmd = &cobra.Command{
 	Use:   "projects",
+	Aliases: []string{"project"}, 
 	Short: "Projects are loaded namespaces within a cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like list or add.")

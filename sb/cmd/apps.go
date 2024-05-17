@@ -21,7 +21,9 @@ type App struct {
 	Subpath string `json:"sub_path"`
 	User    int    `json:"user"`
 	Project string `json:"project"`
+	Status string `json:"status"`
 }
+
 
 type EnvVar struct {
 	Key   string `json:"key"`
@@ -62,6 +64,7 @@ type AppDetail struct {
 	EnvVars []EnvVar      `json:"env_vars"`
 	Volumes []Volume      `json:"volumes"`
 	BuildEnvVars []BuildEnvVar `json:"build_env_vars"`
+
 }
 
 func ConvertEnvVarsToSelect(envVars []EnvVar) []*EnvVarSelect {
@@ -240,13 +243,6 @@ func fetchSecret(appUuid string) ([]Secret, error) {
 
 //function for masking the secret value
 
-func maskValue(value string) string {
-	maxLength:=4
-	if len(value) > maxLength{
-		return value[:maxLength] + "..."
-	}
-	return value
-}
 
 func selectApp(apps []App) App {
 	templates := &promptui.SelectTemplates{
@@ -486,6 +482,7 @@ func selectUpdatedEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSe
 
 var appsCmd = &cobra.Command{
 	Use:   "apps",
+	Aliases: []string{"app"}, 
 	Short: "Manage apps",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like list or add.")
@@ -502,6 +499,7 @@ var appEnvVarCmd = &cobra.Command{
 
 var appVolumeCmd = &cobra.Command{
 	Use:   "vol",
+	Aliases: []string{"volume"}, 
 	Short: "Manage app volumes.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like add or delete.")
@@ -510,6 +508,7 @@ var appVolumeCmd = &cobra.Command{
 
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
+	Aliases: []string{"deploys"}, 
 	Short: "Manage app deployment.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like create or list.")
@@ -518,6 +517,7 @@ var deployCmd = &cobra.Command{
 
 var appSecretCmd = &cobra.Command{
 	Use:   "secret",
+	Aliases: []string{"secrets"}, 
 	Short: "Manage Secrets",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like create or list or delete.")
@@ -531,6 +531,7 @@ var appBuiltEnvCmd = &cobra.Command{
 		fmt.Println("Error: must also specify an action like create or list or delete.")
 	},
 }
+
 
 
 func init() {
