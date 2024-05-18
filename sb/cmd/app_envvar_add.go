@@ -17,9 +17,10 @@ type EnvVarPayload struct {
 
 var appEnvVarAddCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add an env var.",
+	Short: "Add an build env var.",
 	Run:   appEnvVarAdd,
 }
+
 
 func appEnvVarAdd(cmd *cobra.Command, args []string) {
 	apps, err := fetchApps()

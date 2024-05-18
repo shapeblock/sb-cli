@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -43,7 +42,7 @@ func createDeployment(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-
+	
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
