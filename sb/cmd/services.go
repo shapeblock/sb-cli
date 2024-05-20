@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -18,6 +21,11 @@ type Service struct {
 	Subpath string `json:"sub_path"`
 	User    int    `json:"user"`
 	Project string `json:"project"`
+}
+
+type ServiceAttach struct {
+	AppUUID   string `json:"app_uuid"`
+	ExposedAs string `json:"exposed_as,omitempty"`
 }
 
 func fetchServices() ([]Service, error) {
@@ -52,11 +60,44 @@ func fetchServices() ([]Service, error) {
 	return services, nil
 }
 
+func selectService(services []Service) Service {
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "\U0001F449 {{ .Name | cyan }}",
+		Inactive: "  {{ .Name | cyan }}",
+		Selected: "\U0001F3C1 {{ .Name | red | cyan }}",
+	}
+
+	searcher := func(input string, index int) bool {
+		service := services[index]
+		name := strings.Replace(strings.ToLower(service.Name), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input)
+	}
+
+	prompt := promptui.Select{
+		Label:     "Select Service",
+		Items:     services,
+		Templates: templates,
+		Searcher:  searcher,
+	}
+
+	index, _, err := prompt.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
+		return Service{}
+	}
+
+	return services[index]
+}
+
 var servicesCmd = &cobra.Command{
-	Use:   "services",
-	Short: "Manage apps",
+	Use:     "services",
+	Aliases: []string{"service", "svc"},
+	Short:   "Manage apps",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Error: must also specify an action like list or add.")
+		fmt.Println("Error: must also specify an action like list or create.")
 	},
 }
 
