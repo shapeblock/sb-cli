@@ -100,7 +100,7 @@ func createDeployment(cmd *cobra.Command, args []string) {
 	}
 	// TODO: if follow flag is given, stream deployment logs
 	if follow {
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 		fullUrl = fmt.Sprintf("%s/deployments/%s/pod-info/", sbUrl, deploymentResponse.UUID)
 
 		req, err = http.NewRequest("GET", fullUrl, nil)
