@@ -29,6 +29,7 @@ type PodInfo struct {
 	Name       string `json:"name"`
 	KubeConfig string `json:"kubeconfig"`
 	Namespace  string `json:"namespace"`
+	//Label string `json:"label"`
 }
 
 type DeploymentResponse struct {
@@ -94,10 +95,15 @@ func createDeployment(cmd *cobra.Command, args []string) {
 	}
 
 	var deploymentResponse DeploymentResponse
+	//fmt.Print(deploymentResponse)
 	if err := json.NewDecoder(resp.Body).Decode(&deploymentResponse); err != nil {
 		fmt.Printf("Unable to decode deployment response: %v\n", err)
 		os.Exit(1)
 	}
+
+	//fmt.Println("Pod Info:")
+	//fmt.Printf("Deployment UUID: %s\n", deploymentResponse.UUID)
+
 	// TODO: if follow flag is given, stream deployment logs
 	if follow {
 		time.Sleep(10 * time.Second)
@@ -124,13 +130,12 @@ func createDeployment(cmd *cobra.Command, args []string) {
 			fmt.Printf("Unable to decode podinfo from response: %v\n", err)
 			os.Exit(1)
 		}
-
+		
 		decodedKubeConfig, err := base64.StdEncoding.DecodeString(podInfo.KubeConfig)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to decode kubeconfig: %v\n", err)
 			os.Exit(1)
 		}
-
 		if err := tailPodLogs(podInfo.Name, string(decodedKubeConfig), podInfo.Namespace); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to tail logs: %v\n", err)
 			os.Exit(1)

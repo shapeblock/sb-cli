@@ -26,13 +26,13 @@ import (
 			t.SetStyle(table.StyleLight)
 			t.AppendHeader(table.Row{"UUID", "App Name", "Status"})
 			for _, app := range apps {
-				t.AppendRow([]interface{}{app.UUID, app.Name, app.Status})
+				t.AppendRow([]interface{}{app.UUID, app.Name, deployment.app.Status})
 				t.AppendSeparator()
 			}
 			t.AppendSeparator()
 			t.Render()
 			if err != nil {
-				fmt.Println("Unable to parse response")
+			fmt.Println("Unable to parse response")
 			}
 		}
 		

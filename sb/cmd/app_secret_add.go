@@ -12,7 +12,7 @@ import (
 
 type Secret struct {
 	UUID        string `json:"uuid"`
-	Name      string `json:"name"`
+	//Name      string `json:"name"`
 	Key       string `json:"key"`
 	Value     string  `json:"value"`
 
@@ -40,7 +40,7 @@ func appSecretAdd(cmd *cobra.Command, args []string) {
 
 	for {
 		secret:= Secret{
-			Name:    prompt("Enter secret name", true),
+			//Name:    prompt("Enter secret name", true),
 			Key:    prompt("Enter the name of the key ", true),
 			Value: prompt("Enter the  secret value",true),
 		}

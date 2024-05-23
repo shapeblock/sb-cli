@@ -35,10 +35,20 @@ type BuildEnvVar struct{
 	Value string `json:"value"`
 }
 
+type SecretVar struct{
+	Key string `json:"key"`
+	IsSelected bool
+}
+
 type EnvVarSelect struct {
 	Key        string `json:"key"`
 	Value      string `json:"value"`
 	IsSelected bool
+}
+type VolumeSelect struct{
+	Name    string `json:"name"`
+	IsSelected bool
+
 }
 
 type BuildEnvVarSelect struct {
@@ -116,6 +126,7 @@ func ConvertSelectToEnvVars(envVars []*EnvVarSelect) []EnvVar {
 	}
 	return selectEnvVars
 }
+
 
 func fetchAppDetail(appUuid string) (AppDetail, error) {
 
@@ -480,6 +491,9 @@ func selectUpdatedEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSe
 	return selectedVars, nil
 }
 
+
+
+
 var appsCmd = &cobra.Command{
 	Use:   "apps",
 	Aliases: []string{"app"}, 
@@ -531,6 +545,7 @@ var appBuiltEnvCmd = &cobra.Command{
 		fmt.Println("Error: must also specify an action like create or list or delete.")
 	},
 }
+
 
 
 

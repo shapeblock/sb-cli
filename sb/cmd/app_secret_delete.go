@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
+	//"bytes"
+	//"encoding/json"
 	"fmt"
-	"net/http"
+	//"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -12,13 +12,13 @@ import (
 )
 
 type SecretDeletePayload struct {
-	EnvVars []string `json:"delete"`
+	Secrets  []string `json:"delete"`
 }
 
-func GetSecretKeys(envVars []*EnvVarSelect) []string {
+func GetSecretKeys(secrets []*SecretVar) []string {
 	var vars []string
-	for _, envVar := range envVars {
-		vars = append(vars, envVar.Key)
+	for _, secret := range secrets {
+		vars = append(vars, secret.Key)
 	}
 	return vars
 }
@@ -55,8 +55,8 @@ func appSecretDelete(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	payload := EnvVarDeletePayload{EnvVars: GetEnvVarKeys(envVars)}
-	jsonData, err := json.Marshal(payload)
+	//payload := SecretDeletePayload{EnvVars: GetSecretKeys(envVars)}
+	//jsonData, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
 		return
@@ -74,26 +74,28 @@ func appSecretDelete(cmd *cobra.Command, args []string) {
 		fmt.Println("User not logged in")
 		return
 	}
+	
 
-	fullUrl := fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl, appDetail.UUID)
+	//fullUrl := fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl, appDetail.UUID)
 
-	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
+	//req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	// Set the necessary headers
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+	//req.Header.Add("Content-Type", "application/json")
+	//req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
 	// Send the request using the default client
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	//client := &http.Client{}
+	//resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	defer resp.Body.Close() // Ensure the response body is closed
+	//defer resp.Body.Close() // Ensure the response body is closed
+	/*
 
 	// Check the status code of the response
 	if resp.StatusCode == http.StatusOK {
@@ -109,6 +111,7 @@ func appSecretDelete(cmd *cobra.Command, args []string) {
 	}
 
 	//fmt.Fprintf(os.Stdout, "Fetched: %v\n", appDetail)
+	*/
 }
 
 func init() {
