@@ -40,6 +40,7 @@ func appCreate(cmd *cobra.Command, args []string) {
 	project := selectProject(projects)
 	app.Project = project.UUID
 
+	
 	stackPrompt := promptui.Select{
 		Label: "Select Stack",
 		Items: []string{"php", "java", "python", "node", "go", "ruby", "nginx"},
@@ -75,7 +76,7 @@ func appCreate(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-   // fmt.Println("Data", string(jsonData))
+    //fmt.Println("Data", string(jsonData))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 

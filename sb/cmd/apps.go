@@ -538,6 +538,7 @@ var appSecretCmd = &cobra.Command{
 	},
 }
 
+
 var appBuiltEnvCmd = &cobra.Command{
 	Use:   "build-env",
 	Short: "Manage Build Env",
