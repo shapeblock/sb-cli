@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
-
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -17,91 +14,62 @@ var volumeDeleteCmd = &cobra.Command{
 	Run:   volumeDelete,
 }
 
-func selectVolume(volumes []Volume) Volume {
-	templates := &promptui.SelectTemplates{
-		Label:    "{{ . }}?",
-		Active:   "\U0001F449 {{ .Name | cyan }}",
-		Inactive: "  {{ .Name | cyan }}",
-		Selected: "\U0001F3C1 {{ .Name | red | cyan }}",
-	}
-
-	searcher := func(input string, index int) bool {
-		volume := volumes[index]
-		name := strings.Replace(strings.ToLower(volume.Name), " ", "", -1)
-		input = strings.Replace(strings.ToLower(input), " ", "", -1)
-
-		return strings.Contains(name, input)
-	}
-
-	prompt := promptui.Select{
-		Label:     "Select Volume",
-		Items:     volumes,
-		Templates: templates,
-		Searcher:  searcher,
-	}
-
-	index, _, err := prompt.Run()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
-		return Volume{}
-	}
-
-	return volumes[index]
-}
-
 func volumeDelete(cmd *cobra.Command, args []string) {
 	sbUrl := viper.GetString("endpoint")
 	if sbUrl == "" {
 		fmt.Println("User not logged in")
 		return
 	}
-	client := &http.Client{}
+
 	token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
 		return
 	}
+
 	apps, err := fetchApps()
-	app:=selectApp(apps)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching apps: %v\n", err)
 		return
 	}
-	volumes, err := fetchVolume(app.UUID)
+
+	app := selectApp(apps)
+
+	// Fetch volumes associated with the selected app
+    _, err = fetchVolume(app.UUID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching volumes: %v\n", err)
 		return
 	}
 
-	volume := selectVolume(volumes)
+	// Logic to select a volume for deletion
+	// This part needs to be implemented
 
-	confirmationPrompt := promptui.Prompt{
-		Label:     "Delete Volume",
-		IsConfirm: true,
-		Default:   "",
-	}
+	// Construct the URL for the PATCH request
+	fullUrl := fmt.Sprintf("%s/api/apps/%s/volumes/", sbUrl, app.UUID)
 
-	_, err = confirmationPrompt.Run()
-
+	// Create the PATCH request
+	req, err := http.NewRequest("PATCH", fullUrl, nil)
 	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
+		fmt.Println(err)
 		return
 	}
 
-	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/api/apps/%s/volumes/", sbUrl, volume.UUID), nil)
-	if err != nil {
-		fmt.Println(err)
-	}
+	// Add necessary headers
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
+	// Send the request
+	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	defer resp.Body.Close()
 
+	// Handle response status
 	if resp.StatusCode == http.StatusNoContent {
 		fmt.Println("Volume deleted successfully.")
 	} else if resp.StatusCode == http.StatusUnauthorized {

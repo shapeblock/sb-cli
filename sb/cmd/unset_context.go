@@ -5,6 +5,7 @@ import (
     "os"
     "github.com/spf13/cobra"
     "github.com/spf13/viper"
+    //"strings"
     "github.com/manifoldco/promptui"
 )
 
@@ -30,72 +31,70 @@ func unSetContexts(cmd *cobra.Command, args []string) {
         return
     }
 
-    // List available projects
-    projectNames := []string{}
-    for _, context := range cfg.Contexts {
-        for _, cluster := range context.Context.Cluster {
-            for _, project := range cluster.Projects {
-                projectNames = append(projectNames, project.Name)
-            }
-        }
+    // Prompt for username
+    prompt := promptui.Prompt{
+        Label: "Enter the user name",
     }
 
-    // Prompt for project selection
-    prompt := promptui.Select{
-        Label: "Select a project to unset the context",
-        Items: projectNames,
-    }
-    _, selectedProject, err := prompt.Run()
+    username, err := prompt.Run()
     if err != nil {
         fmt.Printf("Prompt failed %v\n", err)
         return
     }
 
-    // Remove the context associated with the selected project
-    var updatedContexts []userContext
-    for _, context := range cfg.Contexts {
-        var updatedClusters []contextCluster
-        for _, cluster := range context.Context.Cluster {
-            var updatedProjects []projectInfo
-            for _, project := range cluster.Projects {
-                if project.Name != selectedProject {
-                    updatedProjects = append(updatedProjects, project)
+    // Check if the user exists
+    var userExists bool
+    for i, context := range cfg.Contexts {
+        if context.Name == username {
+            userExists = true
+
+            // List available projects for the current user
+            projectNames := []string{}
+            for _, cluster := range context.Context.Cluster {
+                for _, project := range cluster.Projects {
+                    projectNames = append(projectNames, project.Name)
                 }
             }
-            if len(updatedProjects) > 0 {
-                updatedClusters = append(updatedClusters, contextCluster{
-                    Name:     cluster.Name,
-                    ID:       cluster.ID,
-                    Projects: updatedProjects,
-                })
+
+            // Prompt for project selection
+            prompt := promptui.Select{
+                Label: "Select a project to unset the context",
+                Items: projectNames,
             }
-        }
-        if len(updatedClusters) > 0 {
-            updatedContexts = append(updatedContexts, userContext{
-                Name:    context.Name,
-                Context: contextData{Cluster: updatedClusters},
-            })
+            _, selectedProjectName, err := prompt.Run()
+            if err != nil {
+                fmt.Printf("Prompt failed %v\n", err)
+                return
+            }
+
+            // Remove the selected project from the user's context
+            for j, cluster := range cfg.Contexts[i].Context.Cluster {
+                for k, project := range cluster.Projects {
+                    if project.Name == selectedProjectName {
+                        cfg.Contexts[i].Context.Cluster[j].Projects = append(cfg.Contexts[i].Context.Cluster[j].Projects[:k], cfg.Contexts[i].Context.Cluster[j].Projects[k+1:]...)
+                        fmt.Printf("Context for project '%s' unset successfully\n", selectedProjectName)
+                        break
+                    }
+                }
+            }
+
+            break
         }
     }
 
-    // Update the context slice
-    cfg.Contexts = updatedContexts
+    if !userExists {
+        fmt.Println("User", username, "not found.")
+        return
+    }
 
     // Update the "contexts" key in Viper's configuration
     viper.Set("contexts", cfg.Contexts)
-
-    // Unset the current context if it matches the context being unset
-    if viper.GetString("current-context") == selectedProject {
-        viper.Set("current-context", "")
-    }
 
     // Write the updated configuration back to Viper
     if err := viper.WriteConfig(); err != nil {
         fmt.Fprintf(os.Stderr, "Error writing config file: %v\n", err)
         return
     }
-
-    fmt.Printf("Context for project '%s' unset successfully\n", selectedProject)
 }
 
 func init() {

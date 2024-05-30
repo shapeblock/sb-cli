@@ -3,8 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"encoding/json"
-
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -22,7 +20,8 @@ type contextCluster struct {
 }
 
 type contextData struct {
-	Cluster []contextCluster `json:"Cluster"`
+	Cluster         []contextCluster `json:"Cluster"`
+	CurrentContext  string           `json:"current-context"`
 }
 
 type userContext struct {
@@ -31,10 +30,9 @@ type userContext struct {
 }
 
 type config struct {
-    Endpoint      string        `json:"endpoint"`
-	Token         string        `json:"token"`
-	CurrentContext string       `json:"current-context"`
-	Contexts      []userContext `json:"contexts"`
+	Contexts []userContext `json:"contexts"`
+	Endpoint string        `json:"endpoint"`
+	Token    string        `json:"token"`
 }
 
 var setCreateCmd = &cobra.Command{
@@ -44,7 +42,9 @@ var setCreateCmd = &cobra.Command{
 }
 
 func setContext(cmd *cobra.Command, args []string) {
+
 	// Load existing configuration
+	
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading config file: %v\n", err)
 		return
@@ -93,96 +93,110 @@ func setContext(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// Check if the user already exists
-	var userExists bool
-	for i, context := range cfg.Contexts {
-		if context.Name == username {
-			userExists = true
+// Check if the user already exists
+var userExists bool
+for i, context := range cfg.Contexts {
+    if context.Name == username {
+        userExists = true
 
-			// Check if the selected project UUID and cluster UUID are different
-			clusterExists := false
-			for j, cluster := range context.Context.Cluster {
-				if cluster.ID == clusterID {
-					clusterExists = true
-					projectExists := false
-					for _, project := range cluster.Projects {
-						if project.UUID == projectUUID {
-							projectExists = true
-							break
-						}
-					}
+        // Check if the selected cluster UUID exists
+        clusterExists := false
+        for j, cluster := range context.Context.Cluster {
+            if cluster.ID == clusterID {
+                clusterExists = true
 
-					if !projectExists {
-						cfg.Contexts[i].Context.Cluster[j].Projects = append(cfg.Contexts[i].Context.Cluster[j].Projects, projectInfo{
-							Name: projectName,
-							UUID: projectUUID,
-						})
-						fmt.Println("Project UUID appended to existing cluster")
-					} else {
-						fmt.Println("Context already exists with the same project UUID, no update needed")
-					}
-					break
-				}
-			}
+                // Check if the selected project UUID exists
+                projectExists := false
+                for k, proj := range cluster.Projects {
+                    if proj.UUID == projectUUID {
+                        projectExists = true
+                        // Update project info if it exists
+                        cfg.Contexts[i].Context.Cluster[j].Projects[k] = projectInfo{
+                            Name: projectName,
+                            UUID: projectUUID,
+                        }
+                        fmt.Println("Project info updated")
+						cfg.Contexts[i].Context.CurrentContext = projectName
+                        break
+                    }
+                }
 
-			if !clusterExists {
-				cfg.Contexts[i].Context.Cluster = append(cfg.Contexts[i].Context.Cluster, contextCluster{
-					Name: clusterName,
-					ID:   clusterID,
-					Projects: []projectInfo{
-						{
-							Name: projectName,
-							UUID: projectUUID,
-						},
-					},
-				})
-				fmt.Println("New cluster and project UUID appended to existing user")
-			}
-			break
-		}
-	}
+                if !projectExists {
+                    // Append new project to the cluster
+                    cfg.Contexts[i].Context.Cluster[j].Projects = append(cfg.Contexts[i].Context.Cluster[j].Projects, projectInfo{
+                        Name: projectName,
+                        UUID: projectUUID,
+                    })
+                    fmt.Println("New project UUID appended to existing cluster")
+                }
 
-	// If the user doesn't exist, append the new user context
-	if !userExists {
-		newContext := userContext{
-			Name: username,
-			Context: contextData{
-				Cluster: []contextCluster{
-					{
-						Name: clusterName,
-						ID:   clusterID,
-						Projects: []projectInfo{
-							{
-								Name: projectName,
-								UUID: projectUUID,
-							},
-						},
-					},
-				},
-			},
-		}
-		cfg.Contexts = append(cfg.Contexts, newContext)
-		//fmt.Println("New context created successfully")
-	}
+                // Update current context for the user based on the selected project
+                cfg.Contexts[i].Context.CurrentContext = projectName
+                break
+            }
+        }
 
-	// Set the current context to the new or updated project
-	cfg.CurrentContext = projectName
+        if !clusterExists {
+            // Append new cluster and project to existing user
+            cfg.Contexts[i].Context.Cluster = append(cfg.Contexts[i].Context.Cluster, contextCluster{
+                Name: clusterName,
+                ID:   clusterID,
+                Projects: []projectInfo{
+                    {
+                        Name: projectName,
+                        UUID: projectUUID,
+                    },
+                },
+            })
+            fmt.Println("New cluster and project UUID appended to existing user")
+            
+            // Update current context for the user based on the selected project
+            cfg.Contexts[i].Context.CurrentContext = projectName
+        }
+
+        break
+    }
+}
+
+// If the user doesn't exist, append the new user context
+
+if !userExists {
+    newContext := userContext{
+        Name: username,
+        Context: contextData{
+            Cluster: []contextCluster{
+                {
+                    Name: clusterName,
+                    ID:   clusterID,
+                    Projects: []projectInfo{
+                        {
+                            Name: projectName,
+                            UUID: projectUUID,
+                        },
+                    },
+                },
+            },
+            CurrentContext: projectName, // Set current context for the new user
+        },
+    }
+    cfg.Contexts = append(cfg.Contexts, newContext)
+}
+
+// Write the updated configuration back to Viper
+viper.Set("contexts", cfg.Contexts)
+
+
+
+
+// Write the updated configuration back to Viper
+viper.Set("contexts", cfg.Contexts)
 
 	// Write the updated configuration back to Viper
-
-	viper.Set("current-context", cfg.CurrentContext)
 	viper.Set("contexts", cfg.Contexts)
 
-	// Ensure to preserve the order
-
-	configBytes, err := json.MarshalIndent(cfg, "", "  ")
-	if err != nil {
-		fmt.Printf("Error marshaling config: %v\n", err)
-		return
-	}
-
-	if err := os.WriteFile(viper.ConfigFileUsed(), configBytes, 0644); err != nil {
-		fmt.Printf("Error writing config file: %v\n", err)
+	// Write the updated configuration back to Viper
+	if err := viper.WriteConfig(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing config file: %v\n", err)
 		return
 	}
 	fmt.Println("Context set successfully")

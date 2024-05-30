@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -17,7 +16,7 @@ type EnvVarPayload struct {
 
 var appEnvVarAddCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add an build env var.",
+	Short: "Add an env var.",
 	Run:   appEnvVarAdd,
 }
 

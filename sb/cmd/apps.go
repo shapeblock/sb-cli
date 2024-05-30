@@ -21,7 +21,6 @@ type App struct {
 	Subpath string `json:"sub_path"`
 	User    int    `json:"user"`
 	Project string `json:"project"`
-	Status string `json:"status"`
 }
 
 
@@ -30,11 +29,10 @@ type EnvVar struct {
 	Value string `json:"value"`
 }
 
-type BuildEnvVar struct{
+type BuildVar struct{
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
-
 type SecretVar struct{
 	Key string `json:"key"`
 	IsSelected bool
@@ -51,7 +49,7 @@ type VolumeSelect struct{
 
 }
 
-type BuildEnvVarSelect struct {
+type BuildSelect struct {
 	Key        string `json:"key"`
 	Value      string `json:"value"`
 	IsSelected bool
@@ -73,7 +71,8 @@ type AppDetail struct {
 	Project ProjectDetail `json:"project"`
 	EnvVars []EnvVar      `json:"env_vars"`
 	Volumes []Volume      `json:"volumes"`
-	BuildEnvVars []BuildEnvVar `json:"build_env_vars"`
+	BuildVars []BuildVar `json:"build_vars"`
+	Secrets      []SecretVar    `json:"secrets"`
 
 }
 
@@ -88,16 +87,17 @@ func ConvertEnvVarsToSelect(envVars []EnvVar) []*EnvVarSelect {
 	}
 	return selectEnvVars
 }
-func ConvertBuildEnvVarsToSelect(BuildenvVars []BuildEnvVar) []*BuildEnvVarSelect {
-	var selectBuildEnvVars []*BuildEnvVarSelect
-	for _, BuildenvVar := range BuildenvVars {
-		selectBuildEnvVars = append(selectBuildEnvVars, &BuildEnvVarSelect{
-			Key:        BuildenvVar.Key,
-			Value:      BuildenvVar.Value,
+func ConvertBuildToSelect(buildVars []BuildVar) []*BuildSelect {
+	var selectBuildVars []*BuildSelect
+	for _, buildVar := range buildVars {
+		fmt.Printf("Converting build env var: %v\n", buildVar) // Debug print
+		selectBuildVars = append(selectBuildVars, &BuildSelect{
+			Key:        buildVar.Key,
+			Value:      buildVar.Value,
 			IsSelected: false,
 		})
 	}
-	return selectBuildEnvVars
+	return selectBuildVars
 }
 
 
@@ -287,6 +287,8 @@ func selectApp(apps []App) App {
 	return apps[index]
 }
 
+
+
 func selectEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSelect, error) {
 	const doneKey = "Done"
 	if len(allVars) > 0 && allVars[0].Key != doneKey {
@@ -336,10 +338,10 @@ func selectEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSelect, e
 	}
 	return selectedVars, nil
 }
-func selectBuildEnvVars(selectedPos int, allVars []*BuildEnvVarSelect) ([]*BuildEnvVarSelect, error) {
+func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, error) {
 	const doneKey = "Done"
 	if len(allVars) > 0 && allVars[0].Key != doneKey {
-		var vars = []*BuildEnvVarSelect{
+		var vars = []*BuildSelect{
 			{
 				Key:   doneKey,
 				Value: "Complete Selection",
@@ -374,10 +376,11 @@ func selectBuildEnvVars(selectedPos int, allVars []*BuildEnvVarSelect) ([]*Build
 		// If the user selected something other than "Done",
 		// toggle selection on this variable and run the function again.
 		chosenVar.IsSelected = !chosenVar.IsSelected
-		return selectBuildEnvVars(selectionIdx, allVars)
+		return selectBuildVars(selectionIdx, allVars)
 	}
 
-	var BuildselectedVars []*BuildEnvVarSelect
+	var BuildselectedVars []*BuildSelect
+	fmt.Println("Available build environment variables for selection:") // Debug print
 	for _, v := range allVars {
 		if v.IsSelected {
 			BuildselectedVars = append(BuildselectedVars, v)
