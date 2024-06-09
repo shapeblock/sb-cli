@@ -21,18 +21,19 @@ type contextCluster struct {
 
 type contextData struct {
 	Cluster         []contextCluster `json:"Cluster"`
-	CurrentContext  string           `json:"current-context"`
 }
 
 type userContext struct {
 	Name    string      `json:"Name"`
 	Context contextData `json:"Context"`
+
 }
 
 type config struct {
-	Contexts []userContext `json:"contexts"`
 	Endpoint string        `json:"endpoint"`
 	Token    string        `json:"token"`
+	CurrentContext string `json:"current-context"`
+	Contexts []userContext `json:"contexts"`
 }
 
 var setCreateCmd = &cobra.Command{
@@ -116,7 +117,7 @@ for i, context := range cfg.Contexts {
                             UUID: projectUUID,
                         }
                         fmt.Println("Project info updated")
-						cfg.Contexts[i].Context.CurrentContext = projectName
+						cfg.CurrentContext= projectName
                         break
                     }
                 }
@@ -131,7 +132,7 @@ for i, context := range cfg.Contexts {
                 }
 
                 // Update current context for the user based on the selected project
-                cfg.Contexts[i].Context.CurrentContext = projectName
+                cfg.CurrentContext = projectName
                 break
             }
         }
@@ -151,7 +152,7 @@ for i, context := range cfg.Contexts {
             fmt.Println("New cluster and project UUID appended to existing user")
             
             // Update current context for the user based on the selected project
-            cfg.Contexts[i].Context.CurrentContext = projectName
+            cfg.CurrentContext = projectName
         }
 
         break
@@ -176,23 +177,15 @@ if !userExists {
                     },
                 },
             },
-            CurrentContext: projectName, // Set current context for the new user
         },
-    }
+	}
     cfg.Contexts = append(cfg.Contexts, newContext)
+	cfg.CurrentContext=projectName
 }
 
 // Write the updated configuration back to Viper
 viper.Set("contexts", cfg.Contexts)
-
-
-
-
-// Write the updated configuration back to Viper
-viper.Set("contexts", cfg.Contexts)
-
-	// Write the updated configuration back to Viper
-	viper.Set("contexts", cfg.Contexts)
+viper.Set("current-context", cfg.CurrentContext)
 
 	// Write the updated configuration back to Viper
 	if err := viper.WriteConfig(); err != nil {

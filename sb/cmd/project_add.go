@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -24,8 +23,33 @@ var createProjectCmd = &cobra.Command{
 }
 
 func createProject(cmd *cobra.Command, args []string) {
+	// API call
+	sbUrl := viper.GetString("endpoint")
+	if sbUrl == "" {
+		fmt.Println("User not logged in")
+		return
+	}
+
+	/*token := viper.GetString("token")
+	if token == "" {
+		fmt.Println("User not logged in")
+		return
+	}*/
+token, err := GetToken(sbUrl)
+if err != nil {
+    fmt.Printf("error getting token: %v\n", err)
+    return
+}
+
 	name := prompt("Project name", true)
 	description := prompt("Project description", false)
+
+	//check if the project name already exists
+	
+	if err := checkExistingProject(name, sbUrl, token); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return
+	}
 
 	clusters, err := fetchClusters()
 	if err != nil {
@@ -34,6 +58,14 @@ func createProject(cmd *cobra.Command, args []string) {
 	}
 	cluster := selectCluster(clusters)
 
+	clusterUUID := cluster.UUID
+
+// Checking cluster status before creating project 
+
+	if err := checkClusterStatus(clusterUUID, sbUrl); err != nil {
+		fmt.Fprintf(os.Stderr, "Cluster is not ready: %v\n", err)
+		return
+	}
 	project := ProjectCreate{
 		Name:        name,
 		Description: description,
@@ -42,19 +74,7 @@ func createProject(cmd *cobra.Command, args []string) {
 
 	jsonData, err := json.Marshal(project)
 	if err != nil {
-		fmt.Println("error marshaling JSON: %w", err)
-	}
-
-	// API call
-	sbUrl := viper.GetString("endpoint")
-	if sbUrl == "" {
-		fmt.Println("User not logged in")
-		return
-	}
-
-	token := viper.GetString("token")
-	if token == "" {
-		fmt.Println("User not logged in")
+		fmt.Println("error marshaling JSON:", err)
 		return
 	}
 
@@ -63,17 +83,19 @@ func createProject(cmd *cobra.Command, args []string) {
 	req, err := http.NewRequest("POST", fullUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	// Set the necessary headers
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	// Send the request using the default client
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	defer resp.Body.Close() // Ensure the response body is closed
@@ -84,15 +106,14 @@ func createProject(cmd *cobra.Command, args []string) {
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		fmt.Println("Authorization failed. Check your token.")
 	} else if resp.StatusCode == http.StatusBadRequest {
-		fmt.Println("Unable to create cluster, bad request.")
+		fmt.Println("Unable to create project, bad request.")
 	} else if resp.StatusCode == http.StatusInternalServerError {
-		fmt.Println("Unable to create cluster, internal server error.")
+		fmt.Println("Unable to create project, internal server error.")
 	} else {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
-
 }
-
+	
 func init() {
 	projectsCmd.AddCommand(createProjectCmd)
 }

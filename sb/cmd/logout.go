@@ -12,6 +12,8 @@ var logoutCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		viper.Set("endpoint", "")
 		viper.Set("token", "")
+		viper.Set("refresh_token","")
+		viper.Set("token_expiry","")
 		viper.WriteConfig()
 	},
 }

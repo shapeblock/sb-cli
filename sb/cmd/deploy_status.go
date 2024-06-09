@@ -35,12 +35,17 @@ func deployStatus(cmd *cobra.Command, args []string) {
         fmt.Println("User not logged in")
         return
     }
-
-    token := viper.GetString("token")
+    token, err := GetToken(sbUrl)
+    if err != nil {
+        fmt.Printf("error getting token: %v\n", err)
+        return
+    }
+    
+   /* token := viper.GetString("token")
     if token == "" {
         fmt.Println("User not logged in")
         return
-    }
+    }*/
 
     t := table.NewWriter()
     t.SetOutputMirror(os.Stdout)
@@ -55,7 +60,7 @@ func deployStatus(cmd *cobra.Command, args []string) {
             return
         }
 
-        req.Header.Add("Authorization", fmt.Sprintf("Token %s", token))
+        req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
 
         client := &http.Client{}
         resp, err := client.Do(req)

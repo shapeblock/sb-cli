@@ -75,11 +75,17 @@ BuildVars := ConvertBuildToSelect(appDetail.BuildVars)
 		return
 	}
 
-	token := viper.GetString("token")
+	/*token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
 		return
-	}
+	}*/
+token, err := GetToken(sbUrl)
+if err != nil {
+    fmt.Printf("error getting token: %v\n", err)
+    return
+}
+
 
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/build-vars/", sbUrl, appDetail.UUID)
 
@@ -90,7 +96,7 @@ BuildVars := ConvertBuildToSelect(appDetail.BuildVars)
 
 	// Set the necessary headers
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	// Send the request using the default client
 	client := &http.Client{}

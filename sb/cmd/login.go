@@ -10,11 +10,18 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
+	//"log"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+type LoginResponse struct {
+	AccessToken  string `json:"access"`
+	RefreshToken string `json:"refresh"`
+}
 
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
@@ -50,10 +57,10 @@ to quickly create a Cobra application.`,
 		}
 
 		prompt = promptui.Prompt{
-			Label: "Username",
+			Label: "Email",
 		}
 
-		userName, err := prompt.Run()
+		email, err := prompt.Run()
 
 		if err != nil {
 			fmt.Printf("Prompt failed %v\n", err)
@@ -71,72 +78,99 @@ to quickly create a Cobra application.`,
 			fmt.Printf("Prompt failed %v\n", err)
 			return
 		}
-		token, err := SbLogin(sbUrl, userName, password)
+		token, refreshToken, err := SbLogin(email, password, sbUrl)
 		if err != nil {
 			fmt.Printf("Login failed %v\n", err)
 			return
 		}
+		fmt.Printf("Login successful")
 		viper.Set("endpoint", sbUrl)
 		viper.Set("token", token)
+		viper.Set("refresh_token", refreshToken)
+		viper.Set("token_expiry", time.Now().Add(time.Minute*2)) // Assuming the token is valid for 2 minutes
 		viper.WriteConfig()
-		fmt.Printf("Logged in to %s as %s successfully.\n", sbUrl, userName)
 	},
 }
 
-func SbLogin(sbUrl string, username string, password string) (string, error) {
-
-	url := fmt.Sprintf("%s/api/auth/login/", sbUrl)
-	method := "POST"
-
-	payload := struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}{
-		Email:    username,
-		Password: password,
+func SbLogin(email, password, sbUrl string) (string, string, error) {
+	data := map[string]string{
+		"email":    email,
+		"password": password,
 	}
-
-	// Marshal the data to JSON
-	jsonData, err := json.Marshal(payload)
+	body, err := json.Marshal(data)
 	if err != nil {
-		fmt.Printf("Error marshaling data: %v\n", err)
-		return "", err
+		return "", "", err
 	}
 
-	client := &http.Client{}
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(jsonData))
-
+	resp, err := http.Post(fmt.Sprintf("%s/api/auth/login/", sbUrl), "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		fmt.Println(err)
-		return "", err
+		return "", "", err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	res, err := client.Do(req)
+	defer resp.Body.Close()
+
+	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
-		return "", err
+		return "", "", err
 	}
-	defer res.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
+	if resp.StatusCode == http.StatusOK {
+		var loginResponse LoginResponse
+		if err := json.Unmarshal(responseBody, &loginResponse); err != nil {
+			return "", "", err
+		}
+		return loginResponse.AccessToken, loginResponse.RefreshToken, nil
+	}
+
+	return "", "", fmt.Errorf("login failed with status: %s", resp.Status)
+}
+
+func RefreshToken(refreshToken, sbUrl string) (string, error) {
+	data := map[string]string{
+		"refresh": refreshToken,
+	}
+	body, err := json.Marshal(data)
 	if err != nil {
-		fmt.Println(err)
 		return "", err
 	}
 
-	var data map[string]string
-	if err := json.Unmarshal(body, &data); err != nil {
-		fmt.Printf("Error parsing JSON: %v\n", err)
+	resp, err := http.Post(fmt.Sprintf("%s/api/auth/token/refresh/", sbUrl), "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("token refresh failed with status: %s", resp.Status)
+	}
+
+	var tokenResponse map[string]string
+	err = json.NewDecoder(resp.Body).Decode(&tokenResponse)
+	if err != nil {
 		return "", err
 	}
 
-	// Extract the "key" value
-	apiKey, exists := data["key"]
-	if !exists {
-		fmt.Println("Key not found in the response")
+	return tokenResponse["access"], nil
+}
+
+func GetToken(sbUrl string) (string, error) {
+	token := viper.GetString("token")
+	refreshToken := viper.GetString("refresh_token")
+	tokenExpiry := viper.GetTime("token_expiry")
+
+	if time.Now().Before(tokenExpiry) {
+		return token, nil
+	}
+
+	newToken, err := RefreshToken(refreshToken, sbUrl)
+	if err != nil {
 		return "", err
 	}
-	return apiKey, nil
+
+	viper.Set("token", newToken)
+	viper.Set("token_expiry", time.Now().Add(time.Minute*2)) // Assuming the token is valid for 2 minutes
+	viper.WriteConfig()
+
+	return newToken, nil
 }
 
 func init() {

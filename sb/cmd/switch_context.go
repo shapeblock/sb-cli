@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-//"encoding/json"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -31,35 +30,48 @@ func switchContext(cmd *cobra.Command, args []string) {
         return
     }
 
-    // Get the current active context
-    //currentContext := viper.GetString("current-context")
+    // Get the current context
+    currentContext := viper.GetString("current-context")
 
-    // Define context names slice
-    var contextNames []string
+    // Define project names slice
+    var projectNames []string
 
-    // List available contexts
+    // List available projects
+    projectContextMap := make(map[string]string)
     for _, context := range cfg.Contexts {
         for _, cluster := range context.Context.Cluster {
             for _, project := range cluster.Projects {
-                contextNames = append(contextNames, fmt.Sprintf("%s:%s", context.Name, project.Name))
+                projectName := fmt.Sprintf("%s:%s", context.Name, project.Name)
+                if context.Name == currentContext {
+                    projectName += " *"
+                }
+                projectNames = append(projectNames, projectName)
+                projectContextMap[projectName] = context.Name
             }
         }
     }
 
-    // Prompt for context selection
+    // Prompt for project selection
     prompt := promptui.Select{
-        Label: "Select a context",
-        Items: contextNames,
+        Label: "Select a project",
+        Items: projectNames,
     }
 
-    selectedContext, _, err := prompt.Run()
+    selectedProjectIndex, _, err := prompt.Run()
     if err != nil {
         fmt.Printf("Prompt failed %v\n", err)
         return
     }
 
-    // Update the current context
-    viper.Set("current-context", selectedContext)
+    // Get the selected project name
+    selectedProject := projectNames[selectedProjectIndex]
+    // Remove the asterisk before updating the context
+    if len(selectedProject) > 1 && selectedProject[len(selectedProject)-1] == '*' {
+        selectedProject = selectedProject[:len(selectedProject)-2]
+    }
+    // Update the current context based on the selected project
+    cfg.CurrentContext = projectContextMap[selectedProject]
+    viper.Set("current-context", cfg.CurrentContext)
 
     // Write the updated configuration back to Viper
     if err := viper.WriteConfig(); err != nil {
@@ -67,7 +79,7 @@ func switchContext(cmd *cobra.Command, args []string) {
         return
     }
 
-    fmt.Println("Context switched successfully")
+    fmt.Println("Context switched successfully to", cfg.CurrentContext)
 }
 
 func init() {
