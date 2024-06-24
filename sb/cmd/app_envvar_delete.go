@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -14,6 +13,7 @@ import (
 type EnvVarDeletePayload struct {
 	EnvVars []string `json:"delete"`
 }
+
 
 func GetEnvVarKeys(envVars []*EnvVarSelect) []string {
 	var vars []string
@@ -43,8 +43,10 @@ func appEnvVarDelete(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(os.Stderr, "Error fetching app detail: %v\n", err)
 		return
 	}
-
+	fmt.Println("Fetched app detail:", appDetail)
+	fmt.Println("Input data for ConvertEnvVarsToSelect:", appDetail.EnvVars)
 	envVars := ConvertEnvVarsToSelect(appDetail.EnvVars)
+	fmt.Println("Output data for ConvertEnvVarsToSelect:", envVars)
 	envVars, err = selectEnvVars(0, envVars)
 	if err != nil {
 		fmt.Printf("Selection failed %v\n", err)
@@ -69,11 +71,17 @@ func appEnvVarDelete(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	token := viper.GetString("token")
+	/*token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
 		return
-	}
+	}*/
+token, err := GetToken(sbUrl)
+if err != nil {
+    fmt.Printf("error getting token: %v\n", err)
+    return
+}
+
 
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/env-vars/", sbUrl, appDetail.UUID)
 
@@ -84,7 +92,7 @@ func appEnvVarDelete(cmd *cobra.Command, args []string) {
 
 	// Set the necessary headers
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	// Send the request using the default client
 	client := &http.Client{}

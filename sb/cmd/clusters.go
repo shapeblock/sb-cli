@@ -6,6 +6,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	//"k8s.io/client-go/tools/auth"
 )
 
 type ClusterDetail struct {
@@ -39,16 +41,16 @@ func fetchClusters() ([]ClusterDetail, error) {
 	if sbUrl == "" {
 		fmt.Println("User not logged in")
 	}
-
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
-
-	token := viper.GetString("token")
-	if token == "" {
-		fmt.Println("User not logged in")
+	// Retrieve the token
+	token, err := GetToken(sbUrl)
+	if err != nil {
+		return nil, fmt.Errorf("error getting token: %v", err)
 	}
 
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
+	//log.Printf("Token: %s", token)
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -61,7 +63,6 @@ func fetchClusters() ([]ClusterDetail, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&clusters); err != nil {
 		return nil, err
 	}
-
 	return clusters, nil
 }
 
@@ -96,6 +97,44 @@ func selectCluster(clusters []ClusterDetail) ClusterDetail {
 
 	return clusters[index]
 }
+func checkClusterStatus(clusterUUID, sbUrl string) error {
+	url := fmt.Sprintf("%s/api/clusters/status/%s/", sbUrl, clusterUUID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+// Send the request
+client := &http.Client{}
+resp, err := client.Do(req)
+if err != nil {
+	return fmt.Errorf("failed to send request: %w", err)
+}
+defer resp.Body.Close()
+
+/*if resp.StatusCode != http.StatusOK {
+	return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+}*/
+
+// Read the response body
+body, err := ioutil.ReadAll(resp.Body)
+if err != nil {
+	return fmt.Errorf("failed to read response body: %w", err)
+}
+
+// Parse the response
+var result map[string]string
+if err := json.Unmarshal(body, &result); err != nil {
+	return fmt.Errorf("failed to parse response body: %w", err)
+}
+
+if status, ok := result["status"]; ok && status == "ready" {
+	return nil
+}
+
+return fmt.Errorf("wait!: %s", result["status"])
+}
+
 
 var clustersCmd = &cobra.Command{
 	Use:   "clusters",

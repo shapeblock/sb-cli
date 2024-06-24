@@ -1,26 +1,20 @@
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
+	//"bytes"
+	//"encoding/json"
 	"fmt"
-	"net/http"
+	//"net/http"
 	"os"
+	"github.com/manifoldco/promptui"
+
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 type SecretDeletePayload struct {
-	EnvVars []string `json:"delete"`
-}
-
-func GetSecretKeys(envVars []*EnvVarSelect) []string {
-	var vars []string
-	for _, envVar := range envVars {
-		vars = append(vars, envVar.Key)
-	}
-	return vars
+	Secrets []string `json:"delete"`
 }
 
 var appSecretDeleteCmd = &cobra.Command{
@@ -44,19 +38,19 @@ func appSecretDelete(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	envVars := ConvertEnvVarsToSelect(appDetail.EnvVars)
-	envVars, err = selectEnvVars(0, envVars)
+	secretVars := ConvertSecretVarsToSelect(appDetail.Secrets)
+	selectedSecrets, err := selectSecretVars(0, secretVars)
 	if err != nil {
 		fmt.Printf("Selection failed %v\n", err)
 		return
 	}
-	if len(envVars) == 0 {
+	if len(selectedSecrets) == 0 {
 		fmt.Println("No env vars deleted")
 		return
 	}
 
-	payload := EnvVarDeletePayload{EnvVars: GetEnvVarKeys(envVars)}
-	jsonData, err := json.Marshal(payload)
+	//payload := SecretDeletePayload{Secrets: GetSecretKeys(selectedSecrets)}
+	//jsonData, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
 		return
@@ -74,7 +68,7 @@ func appSecretDelete(cmd *cobra.Command, args []string) {
 		fmt.Println("User not logged in")
 		return
 	}
-
+/*
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl, appDetail.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
@@ -107,10 +101,69 @@ func appSecretDelete(cmd *cobra.Command, args []string) {
 	} else {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
-
-	//fmt.Fprintf(os.Stdout, "Fetched: %v\n", appDetail)
+	*/
 }
 
 func init() {
 	appSecretCmd.AddCommand(appSecretDeleteCmd)
+}
+
+func selectSecretVars(selectedPos int, allVars []*SecretVar) ([]*SecretVar, error) {
+	const doneKey = "Done"
+	if len(allVars) > 0 && allVars[0].Key != doneKey {
+		var vars = []*SecretVar{
+			{
+				Key: doneKey,
+				//Value: "Complete Selection",
+			},
+		}
+		allVars = append(vars, allVars...)
+	}
+
+	templates := &promptui.SelectTemplates{
+		Label:    `{{if .IsSelected}}✔{{end}} {{ .Key }} - {{ .Value }}`,
+		Active:   "→ {{if .IsSelected}}✔{{end}} {{ .Key | cyan }} - {{ .Value | cyan }}",
+		Inactive: "{{if .IsSelected}}✔{{end}} {{ .Key }} - {{ .Value }}",
+	}
+
+	prompt := promptui.Select{
+		Label:        "Select Secrets to Delete",
+		Items:        allVars,
+		Templates:    templates,
+		Size:         5,
+		CursorPos:    selectedPos,
+		HideSelected: true,
+	}
+
+	selectedIndexes, _, err := prompt.Run()
+	if err != nil {
+		return nil, fmt.Errorf("prompt failed: %w", err)
+	}
+	chosenVar := allVars[selectedIndexes]
+
+	if chosenVar.Key != doneKey {
+		// If the user selected something other than "Done",
+		// toggle selection on this variable and run the function again.
+		chosenVar.IsSelected = !chosenVar.IsSelected
+		return selectSecretVars(selectedIndexes, allVars)
+	}
+	// Construct the list of selected secrets based on the selected indexes
+	var selectedSecrets []*SecretVar
+	for _, v := range allVars {
+		if v.IsSelected {
+			selectedSecrets = append(selectedSecrets, v)
+		}
+	}
+	return selectedSecrets, nil
+}
+
+func ConvertSecretVarsToSelect(secretVars []SecretVar) []*SecretVar {
+	var selectSecretVars []*SecretVar
+	for _, secretVar := range secretVars {
+		selectSecretVars = append(selectSecretVars, &SecretVar{
+			Key: secretVar.Key,
+			//Value: secretVar.Value,
+		})
+	}
+	return selectSecretVars
 }

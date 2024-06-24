@@ -81,19 +81,16 @@ var registerCmd = &cobra.Command{
 			fmt.Println("Password Mismatch, please try again")
 			return
 		}
-
-		data, err := SbRegister(sbUrl, email, password1, password2)
+		_, err = SbRegister(sbUrl, email, password1, password2)
 		if err != nil {
-			fmt.Printf("Register failed %v\n", err)
-			return
+			fmt.Println("Error:", err)
 		}
-		fmt.Printf("Registered in to %s as %s successfully.\n", data, email)
 	},
 }
 
 func SbRegister(sbUrl string, email string, password1 string, password2 string) (string, error) {
 
-	url := fmt.Sprintf("%s/api/auth/register/", sbUrl)
+	url := fmt.Sprintf("%s/api/auth/registration/", sbUrl)
 	method := "POST"
 
 	payload := struct {
@@ -127,6 +124,17 @@ func SbRegister(sbUrl string, email string, password1 string, password2 string) 
 		return "", err
 	}
 	defer res.Body.Close()
+	if res.StatusCode == http.StatusCreated {
+		fmt.Println("Registered Sucessfully")
+	} else if res.StatusCode == http.StatusUnauthorized {
+		fmt.Println("Authorization failed. Check your token.")
+	} else if res.StatusCode == http.StatusBadRequest {
+		fmt.Println("User Registration failed, bad request")
+	}else if res.StatusCode == http.StatusInternalServerError {
+	  fmt.Println("User Registration failed, internal server error.")
+	 }else {
+		fmt.Printf("Unexpected status code: %d\n", res.StatusCode)
+	}
 
 	return "", err
 }

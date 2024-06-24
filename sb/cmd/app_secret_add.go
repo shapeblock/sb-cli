@@ -12,7 +12,7 @@ import (
 
 type Secret struct {
 	UUID        string `json:"uuid"`
-	Name      string `json:"name"`
+	//Name      string `json:"name"`
 	Key       string `json:"key"`
 	Value     string  `json:"value"`
 
@@ -40,7 +40,7 @@ func appSecretAdd(cmd *cobra.Command, args []string) {
 
 	for {
 		secret:= Secret{
-			Name:    prompt("Enter secret name", true),
+			//Name:    prompt("Enter secret name", true),
 			Key:    prompt("Enter the name of the key ", true),
 			Value: prompt("Enter the  secret value",true),
 		}
@@ -64,11 +64,17 @@ func appSecretAdd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	token := viper.GetString("token")
+	/*token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
 		return
-	}
+	}*/
+token, err := GetToken(sbUrl)
+if err != nil {
+    fmt.Printf("error getting token: %v\n", err)
+    return
+}
+
 
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl, app.UUID)
 
@@ -78,7 +84,7 @@ func appSecretAdd(cmd *cobra.Command, args []string) {
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

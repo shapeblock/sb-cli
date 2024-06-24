@@ -9,17 +9,17 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-type BuildEnvPayload struct{
-	BuildEnvVars []BuildEnvVar `json:"build_env_vars"`
+type BuildPayload struct{
+	BuildVars []BuildVar `json:"build_vars"`
 }
 
 var buildEnvAddCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add build env variables",
-	Run: buildEnvAdd,
+	Short: "Add an build env variables",
+	Run: buildAdd,
 	}
 
-func buildEnvAdd(cmd *cobra.Command, args []string){
+func buildAdd(cmd *cobra.Command, args []string){
 
 		apps, err := fetchApps()
 		if err != nil {
@@ -28,25 +28,25 @@ func buildEnvAdd(cmd *cobra.Command, args []string){
 		}
 	
 		app := selectApp(apps)
-		var BuildenvVars []BuildEnvVar
+		var buildVars []BuildVar
 	
 		for {
-			BuildenvVar := BuildEnvVar{
+			buildVar := BuildVar{
 				Key:   prompt("Enter  build env var name", true),
 				Value: prompt("Enter  build env var value", true),
 			}
-			BuildenvVars = append(BuildenvVars, BuildenvVar)
+			buildVars = append(buildVars, buildVar)
 	
 			if prompt("Add another env var? (y/n)", false) != "y" {
 				break
 			}
 		}
-		if len(BuildenvVars) == 0 {
+		if len(buildVars) == 0 {
 			fmt.Println("No env vars changed")
 			return
 
 		}
-		payload := BuildEnvPayload{BuildEnvVars:  BuildenvVars}
+		payload := BuildPayload{BuildVars:  buildVars}
 		jsonData, err := json.Marshal(payload)
 
 		fmt.Println("Data being sent to the server:")
@@ -63,11 +63,17 @@ func buildEnvAdd(cmd *cobra.Command, args []string){
 			return
 		}
 	
-		token := viper.GetString("token")
+		/*token := viper.GetString("token")
 		if token == "" {
 			fmt.Println("User not logged in")
 			return
-		}
+		}*/
+token, err := GetToken(sbUrl)
+if err != nil {
+    fmt.Printf("error getting token: %v\n", err)
+    return
+}
+
 	
 		fullUrl := fmt.Sprintf("%s/api/apps/%s/build-vars/", sbUrl, app.UUID)
 	
@@ -77,7 +83,7 @@ func buildEnvAdd(cmd *cobra.Command, args []string){
 		}
 	
 		req.Header.Add("Content-Type", "application/json")
-		req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	
 		client := &http.Client{}
 		resp, err := client.Do(req)

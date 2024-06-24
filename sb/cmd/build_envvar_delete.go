@@ -11,16 +11,15 @@ import (
 	"net/http"
 	"os"
 	"github.com/spf13/cobra"
-	//"github.com/manifoldco/promptui"
 	"github.com/spf13/viper"
 )
-type BuildEnvVarDeletePayload struct {
-	BuildEnvVars []string `json:"delete"`
+type BuildDeletePayload struct {
+	BuildVars []string `json:"delete"`
 }
-func GetbuiltEnvVarKeys(BuildenvVars []*BuildEnvVarSelect) []string {
+func GetbuiltKeys(BuildVars []*BuildSelect) []string {
 	var vars []string
-	for _, BuildenvVar := range BuildenvVars {
-		vars = append(vars, BuildenvVar.Key)
+	for _, BuildVar := range BuildVars {
+		vars = append(vars, BuildVar.Key)
 
 	}
 	return vars
@@ -29,10 +28,10 @@ func GetbuiltEnvVarKeys(BuildenvVars []*BuildEnvVarSelect) []string {
 var buildEnvvarDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete build env variables",
-	Run: buildEnvVarDelete,
+	Run: buildDelete,
 }
 
-func buildEnvVarDelete(cmd *cobra.Command,args [] string){
+func buildDelete(cmd *cobra.Command,args [] string){
 	apps, err := fetchApps()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching apps: %v\n", err)
@@ -47,22 +46,22 @@ func buildEnvVarDelete(cmd *cobra.Command,args [] string){
 		return
 	}
 	fmt.Println("Fetched app detail:", appDetail)
-	fmt.Println("Input data for ConvertBuildEnvVarsToSelect:", appDetail.BuildEnvVars)
+	fmt.Println("Input data for ConvertBuildToSelect:", appDetail.BuildVars)
 
-	BuildenvVars := ConvertBuildEnvVarsToSelect(appDetail.BuildEnvVars)
-	//fmt.Println("Converted build environment variables:", BuildenvVars)
-	BuildenvVars, err = selectBuildEnvVars(0, BuildenvVars)
-	fmt.Println("Converted build environment variables:", BuildenvVars)
+BuildVars := ConvertBuildToSelect(appDetail.BuildVars)
+	fmt.Println("Converted build environment variables:", BuildVars)
+	BuildVars, err = selectBuildVars(0, BuildVars)
+	fmt.Println("Converted build environment variables:", BuildVars)
 	if err != nil {
 		fmt.Printf("Selection failed %v\n", err)
 		return
 	}
-	if len(BuildenvVars) == 0 {
+	if len(BuildVars) == 0 {
 		fmt.Println("No env vars deleted")
 		return
 	}
     
-	payload := BuildEnvVarDeletePayload{BuildEnvVars: GetbuiltEnvVarKeys(BuildenvVars)}
+	payload := BuildDeletePayload{BuildVars: GetbuiltKeys(BuildVars)}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
@@ -76,11 +75,17 @@ func buildEnvVarDelete(cmd *cobra.Command,args [] string){
 		return
 	}
 
-	token := viper.GetString("token")
+	/*token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
 		return
-	}
+	}*/
+token, err := GetToken(sbUrl)
+if err != nil {
+    fmt.Printf("error getting token: %v\n", err)
+    return
+}
+
 
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/build-vars/", sbUrl, appDetail.UUID)
 
@@ -91,7 +96,7 @@ func buildEnvVarDelete(cmd *cobra.Command,args [] string){
 
 	// Set the necessary headers
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	// Send the request using the default client
 	client := &http.Client{}

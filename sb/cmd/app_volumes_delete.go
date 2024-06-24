@@ -4,25 +4,23 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var clusterDeleteCmd = &cobra.Command{
+var volumeDeleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a cluster",
-	Run:   clusterDelete,
+	Short: "Delete a volume",
+	Run:   volumeDelete,
 }
 
-func clusterDelete(cmd *cobra.Command, args []string) {
+func volumeDelete(cmd *cobra.Command, args []string) {
 	sbUrl := viper.GetString("endpoint")
 	if sbUrl == "" {
 		fmt.Println("User not logged in")
 		return
 	}
-	client := &http.Client{}
+
 	/*token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
@@ -35,52 +33,60 @@ if err != nil {
 }
 
 
-	clusters, err := fetchClusters()
+	apps, err := fetchApps()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error fetching clusters: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error fetching apps: %v\n", err)
 		return
 	}
 
-	cluster := selectCluster(clusters)
+	app := selectApp(apps)
 
-	confirmationPrompt := promptui.Prompt{
-		Label:     "Delete Cluster",
-		IsConfirm: true,
-		Default:   "",
-	}
-
-	_, err = confirmationPrompt.Run()
-
+	// Fetch volumes associated with the selected app
+    _, err = fetchVolume(app.UUID)
 	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error fetching volumes: %v\n", err)
 		return
 	}
 
-	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/api/clusters/%s/", sbUrl, cluster.UUID), nil)
+	// Logic to select a volume for deletion
+	// This part needs to be implemented
+
+	// Construct the URL for the PATCH request
+	fullUrl := fmt.Sprintf("%s/api/apps/%s/volumes/", sbUrl, app.UUID)
+
+	// Create the PATCH request
+	req, err := http.NewRequest("PATCH", fullUrl, nil)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
+
+	// Add necessary headers
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
+	// Send the request
+	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	defer resp.Body.Close()
 
+	// Handle response status
 	if resp.StatusCode == http.StatusNoContent {
-		fmt.Println("Cluster deleted successfully.")
+		fmt.Println("Volume deleted successfully.")
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		fmt.Println("Authorization failed. Check your token.")
 	} else if resp.StatusCode == http.StatusNotFound {
-		fmt.Println("Cluster not found.")
+		fmt.Println("Volume not found.")
 	} else {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
 }
 
 func init() {
-	clustersCmd.AddCommand(clusterDeleteCmd)
+	appVolumeCmd.AddCommand(volumeDeleteCmd)
 }
