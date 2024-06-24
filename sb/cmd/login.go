@@ -87,7 +87,7 @@ to quickly create a Cobra application.`,
 		viper.Set("endpoint", sbUrl)
 		viper.Set("token", token)
 		viper.Set("refresh_token", refreshToken)
-		viper.Set("token_expiry", time.Now().Add(time.Minute*2)) // Assuming the token is valid for 2 minutes
+		viper.Set("token_expiry", time.Now().Add(time.Minute*60)) // Assuming the token is valid for 2 minutes
 		viper.WriteConfig()
 	},
 }
@@ -107,6 +107,7 @@ func SbLogin(email, password, sbUrl string) (string, string, error) {
 		return "", "", err
 	}
 	defer resp.Body.Close()
+	
 
 	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

@@ -23,17 +23,12 @@ type contextData struct {
 	Cluster         []contextCluster `json:"Cluster"`
 }
 
-type userContext struct {
-	Name    string      `json:"Name"`
-	Context contextData `json:"Context"`
-
-}
-
 type config struct {
 	Endpoint string        `json:"endpoint"`
 	Token    string        `json:"token"`
+	User     string         `json:"user"`
 	CurrentContext string `json:"current-context"`
-	Contexts []userContext `json:"contexts"`
+	Contexts contextData `json:"contexts"`
 }
 
 var setCreateCmd = &cobra.Command{
@@ -85,24 +80,19 @@ func setContext(cmd *cobra.Command, args []string) {
 	projectUUID := project.UUID
 
 	// Prompt for username
-	prompt := promptui.Prompt{
+	//userPresent:= viper.GetString("User")
+		prompt := promptui.Prompt{
 		Label: "Enter the user name",
 	}
-	username, err := prompt.Run()
+
+	cfg.User, err = prompt.Run()
 	if err != nil {
 		fmt.Printf("Prompt failed %v\n", err)
 		return
 	}
-
-// Check if the user already exists
-var userExists bool
-for i, context := range cfg.Contexts {
-    if context.Name == username {
-        userExists = true
-
-        // Check if the selected cluster UUID exists
+// Check if the selected cluster UUID exists
         clusterExists := false
-        for j, cluster := range context.Context.Cluster {
+        for j, cluster := range cfg.Contexts.Cluster {
             if cluster.ID == clusterID {
                 clusterExists = true
 
@@ -112,7 +102,7 @@ for i, context := range cfg.Contexts {
                     if proj.UUID == projectUUID {
                         projectExists = true
                         // Update project info if it exists
-                        cfg.Contexts[i].Context.Cluster[j].Projects[k] = projectInfo{
+                        cfg.Contexts.Cluster[j].Projects[k] = projectInfo{
                             Name: projectName,
                             UUID: projectUUID,
                         }
@@ -124,7 +114,7 @@ for i, context := range cfg.Contexts {
 
                 if !projectExists {
                     // Append new project to the cluster
-                    cfg.Contexts[i].Context.Cluster[j].Projects = append(cfg.Contexts[i].Context.Cluster[j].Projects, projectInfo{
+                    cfg.Contexts.Cluster[j].Projects = append(cfg.Contexts.Cluster[j].Projects, projectInfo{
                         Name: projectName,
                         UUID: projectUUID,
                     })
@@ -135,11 +125,12 @@ for i, context := range cfg.Contexts {
                 cfg.CurrentContext = projectName
                 break
             }
+
         }
 
         if !clusterExists {
             // Append new cluster and project to existing user
-            cfg.Contexts[i].Context.Cluster = append(cfg.Contexts[i].Context.Cluster, contextCluster{
+            cfg.Contexts.Cluster = append(cfg.Contexts.Cluster, contextCluster{
                 Name: clusterName,
                 ID:   clusterID,
                 Projects: []projectInfo{
@@ -149,41 +140,14 @@ for i, context := range cfg.Contexts {
                     },
                 },
             })
-            fmt.Println("New cluster and project UUID appended to existing user")
+            fmt.Println("New cluster and project UUID appended to the user")
             
             // Update current context for the user based on the selected project
             cfg.CurrentContext = projectName
         }
 
-        break
-    }
-}
-
-// If the user doesn't exist, append the new user context
-
-if !userExists {
-    newContext := userContext{
-        Name: username,
-        Context: contextData{
-            Cluster: []contextCluster{
-                {
-                    Name: clusterName,
-                    ID:   clusterID,
-                    Projects: []projectInfo{
-                        {
-                            Name: projectName,
-                            UUID: projectUUID,
-                        },
-                    },
-                },
-            },
-        },
-	}
-    cfg.Contexts = append(cfg.Contexts, newContext)
-	cfg.CurrentContext=projectName
-}
-
 // Write the updated configuration back to Viper
+viper.Set("User",cfg.User)
 viper.Set("contexts", cfg.Contexts)
 viper.Set("current-context", cfg.CurrentContext)
 
@@ -192,9 +156,8 @@ viper.Set("current-context", cfg.CurrentContext)
 		fmt.Fprintf(os.Stderr, "Error writing config file: %v\n", err)
 		return
 	}
-	fmt.Println("Context set successfully")
+	//fmt.Println("Context set successfully")
 }
-
 func init() {
 	contextCmd.AddCommand(setCreateCmd)
 }

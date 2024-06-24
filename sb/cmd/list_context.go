@@ -6,8 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"github.com/manifoldco/promptui"
 )
 
 // listCmd represents the list command
@@ -34,37 +32,21 @@ func listContexts(cmd *cobra.Command, args []string) {
         return
     }
 
-    // Prompt for username
-    prompt := promptui.Prompt{
-        Label: "Enter the user name",
-    }
-	
-    username, err := prompt.Run()
-    if err != nil {
-        fmt.Printf("Prompt failed %v\n", err)
-        return
-    }
+    // Get the current context
+     currentContext := viper.GetString("current-context")
 
-    // Check if the user exists
-    var userExists bool
-    for _, context := range cfg.Contexts {
-        if context.Name == username {
-            userExists = true
-            fmt.Println("Current contexts for", username+":")
-            for _, cluster := range context.Context.Cluster {
-                for _, project := range cluster.Projects {
-                    fmt.Printf("- %s\n", project.Name)
+   
+   
+     for _, cluster := range cfg.Contexts.Cluster {
+        for _, project := range cluster.Projects {
+            projectName := fmt.Sprintf("%s", project.Name)
+            if projectName == currentContext {
+                projectName += " *"
+            }
+                    fmt.Printf("%s\n", projectName)
+                    }
                 }
             }
-            break
-        }
-    }
-
-    if !userExists {
-        fmt.Println("User", username, "not found.")
-    }
-}
-
 func init() {
     contextCmd.AddCommand(listContextCmd)
 }

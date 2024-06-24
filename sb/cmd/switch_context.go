@@ -1,5 +1,4 @@
 package cmd
-
 import (
 	"fmt"
 	"os"
@@ -38,18 +37,17 @@ func switchContext(cmd *cobra.Command, args []string) {
 
     // List available projects
     projectContextMap := make(map[string]string)
-    for _, context := range cfg.Contexts {
-        for _, cluster := range context.Context.Cluster {
+
+        for _, cluster := range cfg.Contexts.Cluster {
             for _, project := range cluster.Projects {
-                projectName := fmt.Sprintf("%s:%s", context.Name, project.Name)
-                if context.Name == currentContext {
+                projectName := fmt.Sprintf("%s", project.Name)
+                if projectName == currentContext {
                     projectName += " *"
                 }
                 projectNames = append(projectNames, projectName)
-                projectContextMap[projectName] = context.Name
+                projectContextMap[projectName] = project.Name
             }
         }
-    }
 
     // Prompt for project selection
     prompt := promptui.Select{
@@ -64,12 +62,16 @@ func switchContext(cmd *cobra.Command, args []string) {
     }
 
     // Get the selected project name
+
     selectedProject := projectNames[selectedProjectIndex]
+
     // Remove the asterisk before updating the context
+
     if len(selectedProject) > 1 && selectedProject[len(selectedProject)-1] == '*' {
         selectedProject = selectedProject[:len(selectedProject)-2]
     }
     // Update the current context based on the selected project
+
     cfg.CurrentContext = projectContextMap[selectedProject]
     viper.Set("current-context", cfg.CurrentContext)
 

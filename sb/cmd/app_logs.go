@@ -179,7 +179,6 @@ func getLastPodLogs(clientset *kubernetes.Clientset, pod v1.Pod, namespace strin
 func int64Ptr(i int64) *int64 {
 	return &i
 }
-
 func init() {
 	appsCmd.AddCommand(logsCmd)
 	logsCmd.Flags().BoolVarP(&tail, "follow", "f", false, "Follow the pod logs")

@@ -70,6 +70,16 @@ func deployStatus(cmd *cobra.Command, args []string) {
         }
         defer resp.Body.Close()
 
+        if resp.StatusCode == http.StatusNoContent {
+            fmt.Println("Deployments Found.")
+        } else if resp.StatusCode == http.StatusUnauthorized {
+            fmt.Println("Authorization failed. Check your token.")
+        } else if resp.StatusCode == http.StatusNotFound {
+            fmt.Println("Deployments not found.")
+        } else {
+            fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
+        }
+
         var deployments []Deployment
         if err := json.NewDecoder(resp.Body).Decode(&deployments); err != nil {
             fmt.Println("Error decoding JSON:", err)
