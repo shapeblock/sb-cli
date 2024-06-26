@@ -56,16 +56,12 @@ func projectDelete(cmd *cobra.Command, args []string) {
 		return
 	}
 	client := &http.Client{}
-	/*token := viper.GetString("token")
+	
+    token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
 		return
-	}*/
-token, err := GetToken(sbUrl)
-if err != nil {
-    fmt.Printf("error getting token: %v\n", err)
-    return
-}
+	}
 
 	projects, err := fetchProjects()
 	if err != nil {
@@ -93,7 +89,7 @@ if err != nil {
 		fmt.Println(err)
 	}
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
 	resp, err := client.Do(req)
 	if err != nil {

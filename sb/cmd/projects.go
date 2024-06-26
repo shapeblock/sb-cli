@@ -26,19 +26,14 @@ func fetchProjects() ([]Project, error) {
 	}
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/projects/", sbUrl), nil)
-
-token, err := GetToken(sbUrl)
-if err != nil {
-    fmt.Printf("error getting token: %v\n", err)
-}
-
-	/*token := viper.GetString("token")
+	
+	token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
 	}
-*/
+
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -64,7 +59,7 @@ func checkExistingProject(name, sbUrl, token string) error {
 	}
 
 	// Set the necessary headers
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Add("Authorization", fmt.Sprintf("Token %s", token))
 
 	// Send the request
 	client := &http.Client{}

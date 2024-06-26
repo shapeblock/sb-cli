@@ -41,16 +41,15 @@ func fetchClusters() ([]ClusterDetail, error) {
 	if sbUrl == "" {
 		fmt.Println("User not logged in")
 	}
-	// Retrieve the token
-	token, err := GetToken(sbUrl)
-	if err != nil {
-		return nil, fmt.Errorf("error getting token: %v", err)
+	token := viper.GetString("token")
+	if token == "" {
+		fmt.Println("User not logged in")
 	}
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
 	//log.Printf("Token: %s", token)
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

@@ -137,18 +137,14 @@ func fetchAppDetail(appUuid string) (AppDetail, error) {
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/%s/", sbUrl, appUuid), nil)
 
-	/*token := viper.GetString("token")
+	token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
-	}*/
-	token, err := GetToken(sbUrl)
-if err != nil {
-    fmt.Printf("error getting token: %v\n", err)
 }
 
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -174,18 +170,13 @@ func fetchApps() ([]App, error) {
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/", sbUrl), nil)
 
-	/*token := viper.GetString("token")
+	token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
-	}*/
-token, err := GetToken(sbUrl)
-if err != nil {
-    fmt.Printf("error getting token: %v\n", err)
-}
-
+	}
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -210,18 +201,18 @@ func fetchVolume(appUuid string) ([]Volume, error) {
 	}
 	req, _ := http.NewRequest("GET",fmt.Sprintf("%s/api/apps/%s/volumes/", sbUrl,appUuid), nil)
 
-	/*token := viper.GetString("token")
+	token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
-	}*/
+	}
 
-token, err := GetToken(sbUrl)
+/*token, err := GetToken(sbUrl)
 if err != nil {
     fmt.Printf("error getting token: %v\n", err)
-}
+}*/
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -245,13 +236,13 @@ func fetchSecret(appUuid string) ([]Secret, error) {
 		fmt.Println("User not logged in")
 	}
 	req, _ := http.NewRequest("GET",fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl,appUuid), nil)
-
 	token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
-	}	
+	}
+	
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -565,9 +556,6 @@ var appBuiltEnvCmd = &cobra.Command{
 		fmt.Println("Error: must also specify an action like create or list or delete.")
 	},
 }
-
-
-
 
 func init() {
 	rootCmd.AddCommand(appsCmd)
