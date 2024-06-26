@@ -16,10 +16,10 @@ func makeAPICall(endpointUrl string, method string, jsonData []byte) (string, er
 	if sbUrl == "" {
 		return "", fmt.Errorf("endpoint configuration is missing; user might not be logged in")
 	}
-	
-token, err := GetToken(sbUrl)
-if err != nil {
-		return "", fmt.Errorf("authentication token is missing")
+
+	token := viper.GetString("token")
+	if token == "" {
+		return "", fmt.Errorf("authentication token is missing; user might not be logged in")
 	}
 
 	// Concatenate the base URL with the endpoint URL
@@ -33,7 +33,7 @@ if err != nil {
 
 	// Set the necessary headers
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
 	// Send the request using the default client
 	client := &http.Client{}
@@ -51,6 +51,8 @@ if err != nil {
 
 	return string(body), nil
 }
+
+
 
 func getIntegerInput(label string) (int, error) {
 	validate := func(input string) error {
