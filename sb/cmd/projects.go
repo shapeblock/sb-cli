@@ -15,7 +15,6 @@ type Project struct {
 	Name        string `json:"display_name"`
 	Description string `json:"description"`
 	User        int    `json:"user"`
-	Cluster     string `json:"cluster"`
 }
 
 func fetchProjects() ([]Project, error) {
@@ -25,8 +24,11 @@ func fetchProjects() ([]Project, error) {
 		fmt.Println("User not logged in")
 	}
 
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/projects/", sbUrl), nil)
-	
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/projects/", sbUrl), nil)
+	if err != nil {
+        return nil, fmt.Errorf("error creating request: %v", err)
+    }
+
 	token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
@@ -35,19 +37,27 @@ func fetchProjects() ([]Project, error) {
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
+	//fmt.Println("Request URL:", req.URL.String())
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error making request: %v", err)
 	}
 	defer resp.Body.Close()
 
-	var projects []Project
-	if err := json.NewDecoder(resp.Body).Decode(&projects); err != nil {
-		return nil, err
-	}
+	body, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        return nil, fmt.Errorf("error reading response body: %v", err)
+    }
+    //fmt.Println("Response Body:", string(body))
 
-	return projects, nil
+	var projects []Project
+	if err := json.Unmarshal(body, &projects); err != nil {
+		return nil, fmt.Errorf("error decoding response: %v", err)
+		
+	}
+	//fmt.Println("Fetched Projects:", projects)
+	return projects,nil
 }
 
 func checkExistingProject(name, sbUrl, token string) error {
@@ -80,7 +90,7 @@ func checkExistingProject(name, sbUrl, token string) error {
 	}
 
 	// Parse the response
-	var projects []ProjectCreate
+	var projects []Project
 	if err := json.Unmarshal(body, &projects); err != nil {
 		return fmt.Errorf("failed to parse response body: %w", err)
 	}
