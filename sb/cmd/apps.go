@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -20,7 +21,7 @@ type App struct {
 	Ref     string `json:"ref"`
 	Subpath string `json:"sub_path"`
 	User    int    `json:"user"`
-	Project string `json:"project"`
+	Project ProjectDetail `json:"project"`
 }
 
 
@@ -184,9 +185,12 @@ func fetchApps() ([]App, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
+	body, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        return nil, fmt.Errorf("error reading response body: %v", err)
+    }
 	var apps []App
-	if err := json.NewDecoder(resp.Body).Decode(&apps); err != nil {
+	if err := json.Unmarshal(body, &apps); err != nil {
 		return nil, err
 	}
 

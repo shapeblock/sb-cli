@@ -13,7 +13,7 @@ import (
 type ProjectCreate struct {
 	Name        string `json:"display_name"`
 	Description string `json:"description"`
-	ClusterUUID     string `json:"cluster"`
+	ClusterUUID string `json:"cluster"`
 }
 
 var createProjectCmd = &cobra.Command{
