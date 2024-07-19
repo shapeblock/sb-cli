@@ -12,9 +12,10 @@ import (
 
 var buildEnvvarUpdateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Update build env variables",
+	Short: "Update build  variables",
 	Run: buildEnvVarUpdate,
 }
+
 func buildEnvVarUpdate(cmd *cobra.Command,args [] string){
 	apps, err := fetchApps()
 		if err != nil {
@@ -36,7 +37,6 @@ func buildEnvVarUpdate(cmd *cobra.Command,args [] string){
 		fmt.Printf("Selection failed %v\n", err)
 		return
 	}
-
 	payload := EnvVarPayload{EnvVars: ConvertSelectToEnvVars(envVars)}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {

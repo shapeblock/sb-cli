@@ -43,10 +43,10 @@ func appEnvVarDelete(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(os.Stderr, "Error fetching app detail: %v\n", err)
 		return
 	}
-	fmt.Println("Fetched app detail:", appDetail)
-	fmt.Println("Input data for ConvertEnvVarsToSelect:", appDetail.EnvVars)
+	//fmt.Println("Fetched app detail:", appDetail)
+	//fmt.Println("Input data for ConvertEnvVarsToSelect:", appDetail.EnvVars)
 	envVars := ConvertEnvVarsToSelect(appDetail.EnvVars)
-	fmt.Println("Output data for ConvertEnvVarsToSelect:", envVars)
+	//fmt.Println("Output data for ConvertEnvVarsToSelect:", envVars)
 	envVars, err = selectEnvVars(0, envVars)
 	if err != nil {
 		fmt.Printf("Selection failed %v\n", err)

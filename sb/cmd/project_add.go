@@ -44,14 +44,14 @@ func createProject(cmd *cobra.Command, args []string) {
 	cluster := selectCluster(clusters)
 
 	clusterUUID := cluster.UUID
-   fmt.Println("clusteruuid",clusterUUID)
+  // fmt.Println("clusteruuid",clusterUUID)
 
 // Checking cluster status before creating project 
 
-	if err := checkClusterStatus(clusterUUID, sbUrl); err != nil {
+	/*if err := checkClusterStatus(clusterUUID, sbUrl); err != nil {
 		fmt.Fprintf(os.Stderr, "Cluster is not ready: %v\n", err)
 		return
-	}
+	}*/
 	name := prompt("Project name", true)
 	description := prompt("Project description", false)
    
@@ -68,13 +68,13 @@ func createProject(cmd *cobra.Command, args []string) {
 		ClusterUUID: clusterUUID,
 	}
 
-    fmt.Println("Project struct:", project)
+   // fmt.Println("Project struct:", project)
 	jsonData, err := json.Marshal(project)
 	if err != nil {
 		fmt.Println("error marshaling JSON:", err)
 		return
 	}
-	fmt.Println("data", string(jsonData))
+	//fmt.Println("data", string(jsonData))
 
 	fullUrl := sbUrl + "/api/projects/"
  

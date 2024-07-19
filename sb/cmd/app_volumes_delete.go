@@ -1,13 +1,27 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+type VolumeDeletePayload struct{
 
+	Volumes []string `json:"delete"`
+}
+
+func VolumesKeys(volVars []*VolumeSelect) []string {
+	var vars []string
+	for _, volVar := range volVars {
+		vars = append(vars, volVar.Name)
+	}
+	return vars
+}
 var volumeDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a volume",
@@ -36,24 +50,37 @@ func volumeDelete(cmd *cobra.Command, args []string) {
 	app := selectApp(apps)
 
 	// Fetch volumes associated with the selected app
-    _, err = fetchVolume(app.UUID)
+
+    appDetail, err := fetchAppDetail(app.UUID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching volumes: %v\n", err)
 		return
 	}
+	volVars := ConvertVolumeToSelect(appDetail.Volumes)
+	volVars,err=selectVolVars(0,volVars)
+	if err != nil {
+		fmt.Printf("Selection failed %v\n", err)
+		return
+	}
+	if len(volVars) == 0 {
+		fmt.Println("No vol deleted")
+		return
+	}
+	payload := VolumeDeletePayload{Volumes: VolumesKeys(volVars)}
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		fmt.Println("Error marshaling JSON:", err)
+		return
+	}
 
-	// Logic to select a volume for deletion
-	// This part needs to be implemented
-
-	// Construct the URL for the PATCH request
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/volumes/", sbUrl, app.UUID)
 
-	// Create the PATCH request
-	req, err := http.NewRequest("PATCH", fullUrl, nil)
+	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+	//fmt.Println("data",string(jsonData))
 
 	// Add necessary headers
 	req.Header.Add("Content-Type", "application/json")
@@ -79,6 +106,7 @@ func volumeDelete(cmd *cobra.Command, args []string) {
 	} else {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
+	fmt.Fprintf(os.Stdout, "Fetched: %v\n", appDetail)
 }
 
 func init() {

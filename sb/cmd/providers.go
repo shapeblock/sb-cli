@@ -55,6 +55,7 @@ func fetchProviders() ([]Provider, error) {
 
 var providersCmd = &cobra.Command{
 	Use:   "providers",
+	Aliases: []string{"provider"},
 	Short: "Do things with cloud providers",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like list or add.")
