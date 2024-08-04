@@ -40,6 +40,11 @@ func fetchProviders() ([]Provider, error) {
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("This instance cannot manage providers.")
+	}
+
 	if err != nil {
 		return nil, err
 	}

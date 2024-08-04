@@ -67,6 +67,22 @@ func selectProvider(providers []Provider) Provider {
 func execute(cmd *cobra.Command, args []string) {
 	cluster := Cluster{}
 
+	sbUrl := viper.GetString("endpoint")
+	if sbUrl == "" {
+		return
+	}
+
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+
+	if resp.StatusCode == http.StatusNotFound {
+		fmt.Println("This instance cannot manage clusters.")
+		return
+	}
+
 	// Prompt for cluster name
 	cluster.Name = prompt("Enter the cluster name", true)
 
@@ -103,7 +119,7 @@ func execute(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	sbUrl := viper.GetString("endpoint")
+	sbUrl = viper.GetString("endpoint")
 	if sbUrl == "" {
 		fmt.Println("User not logged in")
 		return
@@ -115,10 +131,9 @@ func execute(cmd *cobra.Command, args []string) {
 		return
 	}
 
-
 	fullUrl := sbUrl + "/api/clusters/"
 
-	req, err := http.NewRequest("POST", fullUrl, bytes.NewBuffer(jsonData))
+	req, err = http.NewRequest("POST", fullUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -128,8 +143,8 @@ func execute(cmd *cobra.Command, args []string) {
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
 	// Send the request using the default client
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	client = &http.Client{}
+	resp, err = client.Do(req)
 	if err != nil {
 		fmt.Println(err)
 	}

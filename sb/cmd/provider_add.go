@@ -3,9 +3,12 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
+
+	"github.com/spf13/viper"
 )
 
 type CloudProvider struct {
@@ -27,6 +30,23 @@ func init() {
 }
 
 func createProvider(cmd *cobra.Command, args []string) {
+
+	sbUrl := viper.GetString("endpoint")
+	if sbUrl == "" {
+		return
+	}
+
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+
+	if resp.StatusCode == http.StatusNotFound {
+		fmt.Println("This instance cannot manage providers.")
+		return
+	}
+
 	name := prompt("Enter the cloud provider name", true)
 	cloudPrompt := promptui.Select{
 		Label: "Select Cloud platform",

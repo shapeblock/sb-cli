@@ -53,6 +53,11 @@ func fetchClusters() ([]ClusterDetail, error) {
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("This instance cannot manage clusters.")
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -103,42 +108,41 @@ func checkClusterStatus(clusterUUID, sbUrl string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
-// Send the request
-client := &http.Client{}
-resp, err := client.Do(req)
-if err != nil {
-	return fmt.Errorf("failed to send request: %w", err)
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	/*if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}*/
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Parse the response
+	var result map[string]string
+	if err := json.Unmarshal(body, &result); err != nil {
+		return fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	if status, ok := result["status"]; ok && status == "ready" {
+		return nil
+	}
+
+	return fmt.Errorf("wait!: %s", result["status"])
 }
-defer resp.Body.Close()
-
-/*if resp.StatusCode != http.StatusOK {
-	return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-}*/
-
-// Read the response body
-body, err := ioutil.ReadAll(resp.Body)
-if err != nil {
-	return fmt.Errorf("failed to read response body: %w", err)
-}
-
-// Parse the response
-var result map[string]string
-if err := json.Unmarshal(body, &result); err != nil {
-	return fmt.Errorf("failed to parse response body: %w", err)
-}
-
-if status, ok := result["status"]; ok && status == "ready" {
-	return nil
-}
-
-return fmt.Errorf("wait!: %s", result["status"])
-}
-
 
 var clustersCmd = &cobra.Command{
-	Use:   "clusters",
-	Aliases: []string{"cluster"}, 
-	Short: "Manage clusters",
+	Use:     "clusters",
+	Aliases: []string{"cluster"},
+	Short:   "Manage clusters",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like list or add.")
 	},
