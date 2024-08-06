@@ -106,7 +106,7 @@ func appSecretVarDelete(cmd *cobra.Command, args []string) {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
 
-	fmt.Fprintf(os.Stdout, "Fetched: %v\n", appDetail)
+	
 }
 
 

@@ -105,7 +105,7 @@ func ConvertEnvVarsToSelect(envVars []EnvVar) []*EnvVarSelect {
 func ConvertBuildToSelect(buildVars []BuildVar) []*BuildSelect {
 	var selectBuildVars []*BuildSelect
 	for _, buildVar := range buildVars {
-		fmt.Printf("Converting build env var: %v\n", buildVar) // Debug print
+		//fmt.Printf("Converting build env var: %v\n", buildVar) // Debug print
 		selectBuildVars = append(selectBuildVars, &BuildSelect{
 			Key:        buildVar.Key,
 			Value:      buildVar.Value,
@@ -151,7 +151,16 @@ func ConvertSelectToEnvVars(envVars []*EnvVarSelect) []EnvVar {
 	}
 	return selectEnvVars
 }
-
+func ConvertSelectToBuildVars(buildVars []*BuildSelect) []BuildVar {
+	var selectBuildVars []BuildVar
+	for _, buildVar := range buildVars {
+		selectBuildVars = append(selectBuildVars, BuildVar{
+			Key:   buildVar.Key,
+			Value: buildVar.Value,
+		})
+	}
+	return selectBuildVars
+}
 
 func fetchAppDetail(appUuid string) (AppDetail, error) {
 
@@ -391,7 +400,7 @@ func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, e
 		Inactive: "{{if .IsSelected}}✔{{end}} {{ .Key }}",
 	}
 
-	prompt := promptui.Select{
+	buildVarSelectprompt := promptui.Select{
 		Label:        "Select Build  Environment Variables",
 		Items:        allVars,
 		Templates:    templates,
@@ -400,7 +409,7 @@ func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, e
 		HideSelected: true,
 	}
 
-	selectionIdx, _, err := prompt.Run()
+	selectionIdx, _, err := buildVarSelectprompt.Run()
 	if err != nil {
 		return nil, fmt.Errorf("prompt failed: %w", err)
 	}
@@ -411,11 +420,12 @@ func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, e
 		// If the user selected something other than "Done",
 		// toggle selection on this variable and run the function again.
 		chosenVar.IsSelected = !chosenVar.IsSelected
+		allVars[selectionIdx].Value = prompt("Enter the build var value", true)
 		return selectBuildVars(selectionIdx, allVars)
 	}
 
 	var BuildselectedVars []*BuildSelect
-	fmt.Println("Available build environment variables for selection:") // Debug print
+	//fmt.Println("Available build environment variables for selection:") // Debug print
 	for _, v := range allVars {
 		if v.IsSelected {
 			BuildselectedVars = append(BuildselectedVars, v)

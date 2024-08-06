@@ -76,6 +76,7 @@ func updateEnvVarAdd(cmd *cobra.Command, args []string) {
 		fmt.Println(err)
 	}
 
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {

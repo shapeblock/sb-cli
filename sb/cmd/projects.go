@@ -3,8 +3,9 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"io/ioutil"
+	"net/http"
+
 	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
@@ -15,6 +16,7 @@ type Project struct {
 	Name        string `json:"display_name"`
 	Description string `json:"description"`
 	User        int    `json:"user"`
+	Cluster     ClusterDetail  `json:"cluster,omitempty"`
 }
 
 func fetchProjects() ([]Project, error) {
@@ -24,10 +26,7 @@ func fetchProjects() ([]Project, error) {
 		fmt.Println("User not logged in")
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/projects/", sbUrl), nil)
-	if err != nil {
-        return nil, fmt.Errorf("error creating request: %v", err)
-    }
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/projects/", sbUrl), nil)
 
 	token := viper.GetString("token")
 	if token == "" {
@@ -105,11 +104,10 @@ func checkExistingProject(name, sbUrl, token string) error {
 	return nil
 }
 
-
 var projectsCmd = &cobra.Command{
-	Use:   "projects",
-	Aliases: []string{"project"}, 
-	Short: "Projects are loaded namespaces within a cluster.",
+	Use:     "projects",
+	Aliases: []string{"project"},
+	Short:   "Projects are loaded namespaces within a cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like list or add.")
 	},

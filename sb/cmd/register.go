@@ -39,6 +39,17 @@ var registerCmd = &cobra.Command{
 			sbUrl = fmt.Sprintf("https://%s", url)
 		}
 
+		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/auth/registration/", sbUrl), nil)
+		req.Header.Add("Content-Type", "application/json")
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+
+		if resp.StatusCode == http.StatusNotFound {
+			fmt.Println("This instance cannot manage registrations.")
+			return
+		}
+
 		if err != nil {
 			fmt.Printf("Prompt failed %v\n", err)
 			return
@@ -130,9 +141,9 @@ func SbRegister(sbUrl string, email string, password1 string, password2 string) 
 		fmt.Println("Authorization failed. Check your token.")
 	} else if res.StatusCode == http.StatusBadRequest {
 		fmt.Println("User Registration failed, bad request")
-	}else if res.StatusCode == http.StatusInternalServerError {
-	  fmt.Println("User Registration failed, internal server error.")
-	 }else {
+	} else if res.StatusCode == http.StatusInternalServerError {
+		fmt.Println("User Registration failed, internal server error.")
+	} else {
 		fmt.Printf("Unexpected status code: %d\n", res.StatusCode)
 	}
 

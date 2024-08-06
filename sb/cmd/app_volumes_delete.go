@@ -97,7 +97,7 @@ func volumeDelete(cmd *cobra.Command, args []string) {
 	defer resp.Body.Close()
 
 	// Handle response status
-	if resp.StatusCode == http.StatusNoContent {
+	if resp.StatusCode == http.StatusOK {
 		fmt.Println("Volume deleted successfully.")
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		fmt.Println("Authorization failed. Check your token.")
@@ -106,7 +106,6 @@ func volumeDelete(cmd *cobra.Command, args []string) {
 	} else {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
-	fmt.Fprintf(os.Stdout, "Fetched: %v\n", appDetail)
 }
 
 func init() {

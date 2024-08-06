@@ -9,10 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 )
-
 var buildEnvvarUpdateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Update build  variables",
+	Short: "Update build variables",
 	Run: buildEnvVarUpdate,
 }
 
@@ -31,13 +30,13 @@ func buildEnvVarUpdate(cmd *cobra.Command,args [] string){
 		return
 	}
 
-	envVars := ConvertEnvVarsToSelect(appDetail.EnvVars)
-	envVars, err = selectUpdatedEnvVars(0, envVars)
+	BuildVars := ConvertBuildToSelect(appDetail.BuildVars)
+	BuildVars, err = selectBuildVars(0, BuildVars)
 	if err != nil {
 		fmt.Printf("Selection failed %v\n", err)
 		return
 	}
-	payload := EnvVarPayload{EnvVars: ConvertSelectToEnvVars(envVars)}
+	payload := BuildPayload{BuildVars: ConvertSelectToBuildVars(BuildVars)}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
@@ -64,6 +63,7 @@ func buildEnvVarUpdate(cmd *cobra.Command,args [] string){
 	if err != nil {
 		fmt.Println(err)
 	}
+	//fmt.Println("Data:",string(jsonData))
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
@@ -77,7 +77,7 @@ func buildEnvVarUpdate(cmd *cobra.Command,args [] string){
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
-		fmt.Println("Env var updated successfully.")
+		fmt.Println("Build var updated successfully.")
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		fmt.Println("Authorization failed. Check your token.")
 	} else if resp.StatusCode == http.StatusBadRequest {
