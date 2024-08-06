@@ -20,7 +20,7 @@ type Service struct {
 	Ref     string `json:"ref"`
 	Subpath string `json:"sub_path"`
 	User    int    `json:"user"`
-	Project string `json:"project"`
+	Project projectInfo `json:"project"`
 }
 
 type ServiceAttach struct {
@@ -95,7 +95,7 @@ func selectService(services []Service) Service {
 var servicesCmd = &cobra.Command{
 	Use:     "services",
 	Aliases: []string{"service", "svc"},
-	Short:   "Manage apps",
+	Short:   "Manage apps Service",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like list or create.")
 	},

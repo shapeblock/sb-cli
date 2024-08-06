@@ -65,8 +65,8 @@ func deployStatus(cmd *cobra.Command, args []string) {
         }
         defer resp.Body.Close()
 
-        if resp.StatusCode == http.StatusNoContent {
-            fmt.Println("Deployments Found.")
+        if resp.StatusCode == http.StatusOK {
+            ///fmt.Println("Deployments Found.")
         } else if resp.StatusCode == http.StatusUnauthorized {
             fmt.Println("Authorization failed. Check your token.")
         } else if resp.StatusCode == http.StatusNotFound {

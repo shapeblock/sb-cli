@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -20,7 +21,7 @@ type App struct {
 	Ref     string `json:"ref"`
 	Subpath string `json:"sub_path"`
 	User    int    `json:"user"`
-	Project string `json:"project"`
+	Project ProjectDetail `json:"project"`
 }
 
 
@@ -33,11 +34,24 @@ type BuildVar struct{
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
-type SecretVar struct{
+type Secret struct{
 	Key string `json:"key"`
 	IsSelected bool
 }
 
+type SecretVar struct {
+	UUID        string `json:"uuid"`
+	//Name      string json:"name"
+	Key       string `json:"key"`
+	Value     string  `json:"value"`
+
+}
+
+type SecretSelect struct{
+	Key        string `json:"key"`
+	Value      string `json:"value"`
+	IsSelected bool
+}
 type EnvVarSelect struct {
 	Key        string `json:"key"`
 	Value      string `json:"value"`
@@ -45,6 +59,8 @@ type EnvVarSelect struct {
 }
 type VolumeSelect struct{
 	Name    string `json:"name"`
+	MountPath string `json:"mount_path"`
+	Size int `json:"size"`
 	IsSelected bool
 
 }
@@ -72,8 +88,7 @@ type AppDetail struct {
 	EnvVars []EnvVar      `json:"env_vars"`
 	Volumes []Volume      `json:"volumes"`
 	BuildVars []BuildVar `json:"build_vars"`
-	Secrets      []SecretVar    `json:"secrets"`
-
+	SecretVars  []SecretVar  `json:"secrets"`
 }
 
 func ConvertEnvVarsToSelect(envVars []EnvVar) []*EnvVarSelect {
@@ -90,7 +105,7 @@ func ConvertEnvVarsToSelect(envVars []EnvVar) []*EnvVarSelect {
 func ConvertBuildToSelect(buildVars []BuildVar) []*BuildSelect {
 	var selectBuildVars []*BuildSelect
 	for _, buildVar := range buildVars {
-		fmt.Printf("Converting build env var: %v\n", buildVar) // Debug print
+		//fmt.Printf("Converting build env var: %v\n", buildVar) // Debug print
 		selectBuildVars = append(selectBuildVars, &BuildSelect{
 			Key:        buildVar.Key,
 			Value:      buildVar.Value,
@@ -100,9 +115,20 @@ func ConvertBuildToSelect(buildVars []BuildVar) []*BuildSelect {
 	return selectBuildVars
 }
 
+func ConvertSecretVarsToSelect(secretVars []SecretVar) []*SecretSelect {
+	var selectSecretVars []*SecretSelect
+	for _, secretVar := range secretVars {
+		//fmt.Printf("Converting build env var: %v\n", secretVar)
+		selectSecretVars = append(selectSecretVars, &SecretSelect{
+			Key:        secretVar.Key,
+			Value:      secretVar.Value,
+			IsSelected: false,
+		})
+	}
+	return selectSecretVars
+}
 
-/*
-func ConvertVolumesToSelect(volumes [] Volume) []*VolumeSelect{
+func ConvertVolumeToSelect(volumes []Volume) []*VolumeSelect{
 	var selectedVolumes []*VolumeSelect
 	for _, vol:=range volumes{
 		selectedVolumes=append(selectedVolumes, &VolumeSelect{
@@ -115,7 +141,6 @@ func ConvertVolumesToSelect(volumes [] Volume) []*VolumeSelect{
 	return selectedVolumes
 }
 
-*/
 func ConvertSelectToEnvVars(envVars []*EnvVarSelect) []EnvVar {
 	var selectEnvVars []EnvVar
 	for _, envVar := range envVars {
@@ -126,7 +151,16 @@ func ConvertSelectToEnvVars(envVars []*EnvVarSelect) []EnvVar {
 	}
 	return selectEnvVars
 }
-
+func ConvertSelectToBuildVars(buildVars []*BuildSelect) []BuildVar {
+	var selectBuildVars []BuildVar
+	for _, buildVar := range buildVars {
+		selectBuildVars = append(selectBuildVars, BuildVar{
+			Key:   buildVar.Key,
+			Value: buildVar.Value,
+		})
+	}
+	return selectBuildVars
+}
 
 func fetchAppDetail(appUuid string) (AppDetail, error) {
 
@@ -184,9 +218,12 @@ func fetchApps() ([]App, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
+	body, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        return nil, fmt.Errorf("error reading response body: %v", err)
+    }
 	var apps []App
-	if err := json.NewDecoder(resp.Body).Decode(&apps); err != nil {
+	if err := json.Unmarshal(body, &apps); err != nil {
 		return nil, err
 	}
 
@@ -363,8 +400,60 @@ func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, e
 		Inactive: "{{if .IsSelected}}✔{{end}} {{ .Key }}",
 	}
 
-	prompt := promptui.Select{
+	buildVarSelectprompt := promptui.Select{
 		Label:        "Select Build  Environment Variables",
+		Items:        allVars,
+		Templates:    templates,
+		Size:         5,
+		CursorPos:    selectedPos,
+		HideSelected: true,
+	}
+
+	selectionIdx, _, err := buildVarSelectprompt.Run()
+	if err != nil {
+		return nil, fmt.Errorf("prompt failed: %w", err)
+	}
+
+	chosenVar := allVars[selectionIdx]
+
+	if chosenVar.Key != doneKey {
+		// If the user selected something other than "Done",
+		// toggle selection on this variable and run the function again.
+		chosenVar.IsSelected = !chosenVar.IsSelected
+		allVars[selectionIdx].Value = prompt("Enter the build var value", true)
+		return selectBuildVars(selectionIdx, allVars)
+	}
+
+	var BuildselectedVars []*BuildSelect
+	//fmt.Println("Available build environment variables for selection:") // Debug print
+	for _, v := range allVars {
+		if v.IsSelected {
+			BuildselectedVars = append(BuildselectedVars, v)
+		}
+	}
+	return BuildselectedVars, nil
+}
+
+func selectSecretVars(selectedPos int, allVars []*SecretSelect) ([]*SecretSelect, error) {
+	const doneKey = "Done"
+	if len(allVars) > 0 && allVars[0].Key != doneKey {
+		var vars = []*SecretSelect{
+			{
+				Key:   doneKey,
+				Value: "Complete Selection",
+			},
+		}
+		allVars = append(vars, allVars...)
+	}
+
+	templates := &promptui.SelectTemplates{
+		Label:    `{{if .IsSelected}}✔{{end}} {{ .Key }} - {{ .Value }}`,
+		Active:   "→ {{if .IsSelected}}✔{{end}} {{ .Key | cyan }}",
+		Inactive: "{{if .IsSelected}}✔{{end}} {{ .Key }}",
+	}
+
+	prompt := promptui.Select{
+		Label:        "Select secret Variables",
 		Items:        allVars,
 		Templates:    templates,
 		Size:         5,
@@ -383,21 +472,20 @@ func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, e
 		// If the user selected something other than "Done",
 		// toggle selection on this variable and run the function again.
 		chosenVar.IsSelected = !chosenVar.IsSelected
-		return selectBuildVars(selectionIdx, allVars)
+		return selectSecretVars(selectionIdx, allVars)
 	}
 
-	var BuildselectedVars []*BuildSelect
-	fmt.Println("Available build environment variables for selection:") // Debug print
+	var selectedVars []*SecretSelect
+	//fmt.Println("Available secret variables for selection:")
 	for _, v := range allVars {
 		if v.IsSelected {
-			BuildselectedVars = append(BuildselectedVars, v)
+			selectedVars = append(selectedVars, v)
 		}
 	}
-	return BuildselectedVars, nil
+	return selectedVars, nil
 }
 
-
-/*func selectedVolumes(selectedPos int, allVars []*VolumeSelect) ([]*VolumeSelect, error) {
+func selectVolVars(selectedPos int, allVars []*VolumeSelect) ([]*VolumeSelect, error) {
 	const doneKey = "Done"
 	if len(allVars) > 0 && allVars[0].Name != doneKey {
 		var vars = []*VolumeSelect{
@@ -410,16 +498,16 @@ func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, e
 	}
 
 	templates := &promptui.SelectTemplates{
-		Label:    `{{if .IsSelected}}✔{{end}} {{ .Name }} - {{ .Value }}`,
+		Label:    `{{if .IsSelected}}✔{{end}} {{ .Name }}`,
 		Active:   "→ {{if .IsSelected}}✔{{end}} {{ .Name | cyan }}",
 		Inactive: "{{if .IsSelected}}✔{{end}} {{ .Name }}",
 	}
 
 	prompt := promptui.Select{
-		Label:        "Select Environment Variables",
+		Label:        "Select volume",
 		Items:        allVars,
 		Templates:    templates,
-		Size:         9,
+		Size:         5,
 		CursorPos:    selectedPos,
 		HideSelected: true,
 	}
@@ -435,10 +523,11 @@ func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, e
 		// If the user selected something other than "Done",
 		// toggle selection on this variable and run the function again.
 		chosenVar.IsSelected = !chosenVar.IsSelected
-		return VolumeSelect(selectionIdx, allVars)
+		return selectVolVars(selectionIdx, allVars)
 	}
 
-	var selectedVars []*EnvVarSelect
+	var selectedVars []*VolumeSelect
+	//fmt.Println("Available secret variables for selection:")
 	for _, v := range allVars {
 		if v.IsSelected {
 			selectedVars = append(selectedVars, v)
@@ -446,8 +535,6 @@ func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, e
 	}
 	return selectedVars, nil
 }
-*/
-
 
 
 func selectUpdatedEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSelect, error) {

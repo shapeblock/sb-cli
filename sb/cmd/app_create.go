@@ -64,8 +64,10 @@ func appCreate(cmd *cobra.Command, args []string) {
 	}
 	// Here you can use the app.Project UUID as needed
 	//fmt.Printf("Using project UUID: %s\n", app.Project)
+	if(currentContext !=""){
 	green := promptui.Styler(promptui.FGGreen)
 		fmt.Println(green(fmt.Sprintf("Current Context: %s", currentContext)))
+	}
 	app.Name = prompt("Enter the app name", true)	
 	stackPrompt := promptui.Select{
 		Label: "Select Stack",

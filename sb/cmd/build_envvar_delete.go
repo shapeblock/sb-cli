@@ -27,7 +27,7 @@ func GetbuiltKeys(BuildVars []*BuildSelect) []string {
 
 var buildEnvvarDeleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete build env variables",
+	Short: "Delete build  variables",
 	Run: buildDelete,
 }
 
@@ -45,19 +45,14 @@ func buildDelete(cmd *cobra.Command,args [] string){
 		fmt.Fprintf(os.Stderr, "Error fetching app detail: %v\n", err)
 		return
 	}
-	fmt.Println("Fetched app detail:", appDetail)
-	fmt.Println("Input data for ConvertBuildToSelect:", appDetail.BuildVars)
-
 BuildVars := ConvertBuildToSelect(appDetail.BuildVars)
-	fmt.Println("Converted build environment variables:", BuildVars)
 	BuildVars, err = selectBuildVars(0, BuildVars)
-	fmt.Println("Converted build environment variables:", BuildVars)
 	if err != nil {
 		fmt.Printf("Selection failed %v\n", err)
 		return
 	}
 	if len(BuildVars) == 0 {
-		fmt.Println("No env vars deleted")
+		fmt.Println("No build vars deleted")
 		return
 	}
     
@@ -104,19 +99,16 @@ BuildVars := ConvertBuildToSelect(appDetail.BuildVars)
 
 	// Check the status code of the response
 	if resp.StatusCode == http.StatusOK {
-		fmt.Println("Build Env vars deleted successfully.")
+		fmt.Println("Build  vars deleted successfully.")
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		fmt.Println("Authorization failed. Check your token.")
 	} else if resp.StatusCode == http.StatusBadRequest {
-		fmt.Println("Unable to delete  build env vars, bad request.")
+		fmt.Println("Unable to delete  build  vars, bad request.")
 	} else if resp.StatusCode == http.StatusInternalServerError {
 		fmt.Println("Unable to delete  build env vars, internal server error.")
 	} else {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
-
-	fmt.Fprintf(os.Stdout, "Fetched: %v\n", appDetail)
-
 }
 
 func init() {
