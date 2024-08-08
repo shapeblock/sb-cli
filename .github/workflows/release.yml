@@ -1,0 +1,40 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.22.x
+
+    - name: Build for ${{ matrix.os }}
+      run: |
+        cd sb
+        if [ ${{ matrix.os }} == 'ubuntu-latest' ]; then
+          GOOS=linux GOARCH=amd64 go build -o ../sb-cli-linux-amd64
+        elif [ ${{ matrix.os }} == 'macos-latest' ]; then
+          GOOS=darwin GOARCH=arm64 go build -o ../sb-cli-macos-arm64
+        else
+          GOOS=windows GOARCH=amd64 go build -o ../sb-cli-windows-amd64.exe
+        fi
+
+    - name: Create a release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: sb-cli-*
+
