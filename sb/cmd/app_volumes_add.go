@@ -12,11 +12,10 @@ import (
 )
 
 type Volume struct {
-	UUID        string `json:"uuid"`
+	//UUID        string `json:"uuid"`
 	Name      string `json:"name"`
 	MountPath string `json:"mount_path"`
 	Size      int    `json:"size"`
-
 }
 
 type VolumePayload struct {
@@ -96,6 +95,7 @@ func appVolumeAdd(cmd *cobra.Command, args []string) {
 	}
 
 	defer resp.Body.Close()
+	//fmt.Println(string(jsonData))
 
 	if resp.StatusCode == http.StatusOK {
 		fmt.Println("Volumes added successfully.")

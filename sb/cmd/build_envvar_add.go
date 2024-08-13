@@ -32,25 +32,25 @@ func buildAdd(cmd *cobra.Command, args []string){
 	
 		for {
 			buildVar := BuildVar{
-				Key:   prompt("Enter  build env var name", true),
-				Value: prompt("Enter  build env var value", true),
+				Key:   prompt("Enter  build  var name", true),
+				Value: prompt("Enter  build  var value", true),
 			}
 			buildVars = append(buildVars, buildVar)
 	
-			if prompt("Add another env var? (y/n)", false) != "y" {
+			if prompt("Add another build var? (y/n)", false) != "y" {
 				break
 			}
 		}
 		if len(buildVars) == 0 {
-			fmt.Println("No env vars changed")
+			fmt.Println("No build vars changed")
 			return
 
 		}
 		payload := BuildPayload{BuildVars:  buildVars}
 		jsonData, err := json.Marshal(payload)
 
-		fmt.Println("Data being sent to the server:")
-		fmt.Println(string(jsonData))
+		//fmt.Println("Data being sent to the server:")
+		//fmt.Println(string(jsonData))
 		if err != nil {
 			fmt.Println("Error marshaling JSON:", err)
 			return
@@ -88,13 +88,13 @@ func buildAdd(cmd *cobra.Command, args []string){
 		defer resp.Body.Close()
 	
 		if resp.StatusCode == http.StatusOK {
-			fmt.Println("Env var added successfully.")
+			fmt.Println("Build var added successfully.")
 		} else if resp.StatusCode == http.StatusUnauthorized {
 			fmt.Println("Authorization failed. Check your token.")
 		} else if resp.StatusCode == http.StatusBadRequest {
-			fmt.Println("Unable to add env var, bad request.")
+			fmt.Println("Unable to add build var, bad request.")
 		} else if resp.StatusCode == http.StatusInternalServerError {
-			fmt.Println("Unable to add env var, internal server error.")
+			fmt.Println("Unable to add build var, internal server error.")
 		} else {
 			fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 		}
