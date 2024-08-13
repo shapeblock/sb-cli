@@ -36,13 +36,8 @@ func createProject(cmd *cobra.Command, args []string) {
 		fmt.Println("User not logged in")
 		return
 	}
-	clusters, err := fetchClusters()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error fetching clusters: %v\n", err)
-		return
-  }	
-  
-  name := prompt("Project name", true)
+
+	name := prompt("Project name", true)
 	description := prompt("Project description", false)
 
 	//check if the project name already exists
@@ -77,20 +72,20 @@ func createProject(cmd *cobra.Command, args []string) {
 		project.Cluster = cluster.UUID
 	}
 
-  jsonData, err := json.Marshal(project)
+	jsonData, err := json.Marshal(project)
 	if err != nil {
 		fmt.Println("error marshaling JSON:", err)
 		return
 	}
 
 	fullUrl := sbUrl + "/api/projects/"
- 
+
 	req, err := http.NewRequest("POST", fullUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	
+
 	// Set the necessary headers
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
@@ -104,11 +99,9 @@ func createProject(cmd *cobra.Command, args []string) {
 	}
 
 	defer resp.Body.Close() // Ensure the response body is closed
-	 
-	  
 
 	// Check the status code of the response
-	
+
 	if resp.StatusCode == http.StatusCreated {
 		fmt.Println("New project created successfully.")
 	} else if resp.StatusCode == http.StatusUnauthorized {
