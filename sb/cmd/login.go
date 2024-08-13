@@ -73,6 +73,19 @@ var loginCmd = &cobra.Command{
 			return
 		}
 
+		// check if we are dealing with SB OSS or SaaS
+		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/auth/registration/", sbUrl), nil)
+		req.Header.Add("Content-Type", "application/json")
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+
+		if resp.StatusCode == http.StatusNotFound {
+			viper.Set("server", "oss")
+		} else {
+			viper.Set("server", "saas")
+		}
+
 		fmt.Println("Login successful")
 		viper.Set("endpoint", sbUrl)
 		viper.Set("token", token)

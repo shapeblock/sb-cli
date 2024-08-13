@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -13,7 +14,7 @@ import (
 type ProjectCreate struct {
 	Name        string `json:"display_name"`
 	Description string `json:"description"`
-	Cluster     string `json:"cluster"`
+	Cluster     string `json:"cluster,omitempty"`
 }
 
 var createProjectCmd = &cobra.Command{
@@ -39,31 +40,35 @@ func createProject(cmd *cobra.Command, args []string) {
 	description := prompt("Project description", false)
 
 	//check if the project name already exists
-	
+
 	if err := checkExistingProject(name, sbUrl, token); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return
 	}
 
-	clusters, err := fetchClusters()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error fetching clusters: %v\n", err)
-		return
-	}
-	cluster := selectCluster(clusters)
-
-	clusterUUID := cluster.UUID
-
-// Checking cluster status before creating project 
-
-	if err := checkClusterStatus(clusterUUID, sbUrl); err != nil {
-		fmt.Fprintf(os.Stderr, "Cluster is not ready: %v\n", err)
-		return
-	}
 	project := ProjectCreate{
 		Name:        name,
 		Description: description,
-		Cluster:     cluster.UUID,
+	}
+
+	server := viper.GetString("server")
+	if server == "saas" {
+		clusters, err := fetchClusters()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching clusters: %v\n", err)
+			return
+		}
+		cluster := selectCluster(clusters)
+
+		clusterUUID := cluster.UUID
+
+		// Checking cluster status before creating project
+
+		if err := checkClusterStatus(clusterUUID, sbUrl); err != nil {
+			fmt.Fprintf(os.Stderr, "Cluster is not ready: %v\n", err)
+			return
+		}
+		project.Cluster = cluster.UUID
 	}
 
 	jsonData, err := json.Marshal(project)
@@ -107,7 +112,7 @@ func createProject(cmd *cobra.Command, args []string) {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
 }
-	
+
 func init() {
 	projectsCmd.AddCommand(createProjectCmd)
 }
