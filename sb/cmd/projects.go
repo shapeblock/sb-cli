@@ -12,20 +12,12 @@ import (
 )
 
 type Project struct {
-<<<<<<< HEAD
 	UUID        string        `json:"uuid"`
 	Name        string        `json:"display_name"`
 	Description string        `json:"description"`
 	User        int           `json:"user"`
+	App         []App         `json:"apps"`
 	Cluster     ClusterDetail `json:"cluster,omitempty"`
-=======
-	UUID        string `json:"uuid"`
-	Name        string `json:"display_name"`
-	Description string `json:"description"`
-	User        int    `json:"user"`
-	App      []App    `json:"apps"`
-	Cluster     ClusterDetail  `json:"cluster,omitempty"`
->>>>>>> 757d3dfd5d7d62dd23c03cf052403073f4b5e14c
 }
 
 func fetchProjects() ([]Project, error) {
