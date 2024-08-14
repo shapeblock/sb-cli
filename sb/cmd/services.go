@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	//"io"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -21,6 +22,7 @@ type Service struct {
 	Subpath string `json:"sub_path"`
 	User    int    `json:"user"`
 	Project projectInfo `json:"project"`
+	Type string `json:"type"`
 }
 
 type ServiceAttach struct {
@@ -51,6 +53,13 @@ func fetchServices() ([]Service, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+    /*bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("Response Body:", string(bodyBytes))
+*/
 
 	var services []Service
 	if err := json.NewDecoder(resp.Body).Decode(&services); err != nil {

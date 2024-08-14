@@ -31,7 +31,7 @@ func buildEnvVarUpdate(cmd *cobra.Command,args [] string){
 	}
 
 	BuildVars := ConvertBuildToSelect(appDetail.BuildVars)
-	BuildVars, err = selectBuildVars(0, BuildVars)
+	BuildVars, err = selectUpdatedBuildVars(0, BuildVars)
 	if err != nil {
 		fmt.Printf("Selection failed %v\n", err)
 		return

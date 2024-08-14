@@ -21,6 +21,7 @@ type App struct {
 	Ref     string `json:"ref"`
 	Subpath string `json:"sub_path"`
 	User    int    `json:"user"`
+	CustomDomain  string  `json:"custom_domain"`
 	Project ProjectDetail `json:"project"`
 }
 
@@ -118,7 +119,6 @@ func ConvertBuildToSelect(buildVars []BuildVar) []*BuildSelect {
 func ConvertSecretVarsToSelect(secretVars []SecretVar) []*SecretSelect {
 	var selectSecretVars []*SecretSelect
 	for _, secretVar := range secretVars {
-		//fmt.Printf("Converting build env var: %v\n", secretVar)
 		selectSecretVars = append(selectSecretVars, &SecretSelect{
 			Key:        secretVar.Key,
 			Value:      secretVar.Value,
@@ -382,7 +382,7 @@ func selectEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSelect, e
 	}
 	return selectedVars, nil
 }
-func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, error) {
+func selectUpdatedBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, error) {
 	const doneKey = "Done"
 	if len(allVars) > 0 && allVars[0].Key != doneKey {
 		var vars = []*BuildSelect{
@@ -421,7 +421,7 @@ func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, e
 		// toggle selection on this variable and run the function again.
 		chosenVar.IsSelected = !chosenVar.IsSelected
 		allVars[selectionIdx].Value = prompt("Enter the build var value", true)
-		return selectBuildVars(selectionIdx, allVars)
+		return selectUpdatedBuildVars(selectionIdx, allVars)
 	}
 
 	var BuildselectedVars []*BuildSelect
@@ -589,7 +589,56 @@ func selectUpdatedEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSe
 }
 
 
+func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, error) {
+	const doneKey = "Done"
+	if len(allVars) > 0 && allVars[0].Key != doneKey {
+		var vars = []*BuildSelect{
+			{
+				Key:   doneKey,
+				Value: "Complete Selection",
+			},
+		}
+		allVars = append(vars, allVars...)
+	}
 
+	templates := &promptui.SelectTemplates{
+		Label:    `{{if .IsSelected}}✔{{end}} {{ .Key }} - {{ .Value }}`,
+		Active:   "→ {{if .IsSelected}}✔{{end}} {{ .Key | cyan }}",
+		Inactive: "{{if .IsSelected}}✔{{end}} {{ .Key }}",
+	}
+
+	buildVarSelectprompt := promptui.Select{
+		Label:        "Select Build  Environment Variables",
+		Items:        allVars,
+		Templates:    templates,
+		Size:         5,
+		CursorPos:    selectedPos,
+		HideSelected: true,
+	}
+
+	selectionIdx, _, err := buildVarSelectprompt.Run()
+	if err != nil {
+		return nil, fmt.Errorf("prompt failed: %w", err)
+	}
+
+	chosenVar := allVars[selectionIdx]
+
+	if chosenVar.Key != doneKey {
+		// If the user selected something other than "Done",
+		// toggle selection on this variable and run the function again.
+		chosenVar.IsSelected = !chosenVar.IsSelected
+		return selectBuildVars(selectionIdx, allVars)
+	}
+
+	var BuildselectedVars []*BuildSelect
+	//fmt.Println("Available build environment variables for selection:") // Debug print
+	for _, v := range allVars {
+		if v.IsSelected {
+			BuildselectedVars = append(BuildselectedVars, v)
+		}
+	}
+	return BuildselectedVars, nil
+}
 
 var appsCmd = &cobra.Command{
 	Use:   "apps",
@@ -644,6 +693,14 @@ var appBuiltEnvCmd = &cobra.Command{
 	},
 }
 
+var appDomainCmd = &cobra.Command{
+	Use:   "domain",
+	Short: "Manage Domains",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Error: must also specify an action like create or list or delete.")
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(appsCmd)
 	appsCmd.AddCommand(appEnvVarCmd)
@@ -651,4 +708,5 @@ func init() {
 	appsCmd.AddCommand(deployCmd)
 	appsCmd.AddCommand(appSecretCmd)
 	appsCmd.AddCommand(appBuiltEnvCmd)
+	appsCmd.AddCommand(appDomainCmd)
 }

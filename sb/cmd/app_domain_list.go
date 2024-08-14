@@ -7,13 +7,13 @@ import (
 			"github.com/spf13/cobra"
 		)
 		
-		var appListCmd = &cobra.Command{
+		var domainListCmd = &cobra.Command{
 			Use:   "list",
-			Short: "List all apps",
-			Run:   appList,
+			Short: "List all Custom Domains",
+			Run:   domainList,
 		}
 		
-		func appList(cmd *cobra.Command, args []string) {
+		func domainList(cmd *cobra.Command, args []string) {
 			//TODO: if project context is set, list all apps in project context.
 			apps, err := fetchApps()
 			if err != nil {
@@ -24,9 +24,9 @@ import (
 			t := table.NewWriter()
 			t.SetOutputMirror(os.Stdout)
 			t.SetStyle(table.StyleLight)
-			t.AppendHeader(table.Row{"UUID", "Name", "Project","Stack", "Repo", "Ref", "Subpath"})
+			t.AppendHeader(table.Row{"UUID", "Name", "Custom Domain"})
 			for _, app := range apps {
-				t.AppendRow([]interface{}{app.UUID, app.Name, app.Project.Name, app.Stack, app.Repo, app.Ref, app.Subpath})
+				t.AppendRow([]interface{}{app.UUID, app.Name, app.CustomDomain})
 				t.AppendSeparator()
 			}
 			t.AppendSeparator()
@@ -37,6 +37,7 @@ import (
 		}
 		
 		func init() {
-			appsCmd.AddCommand(appListCmd)
+			appDomainCmd.AddCommand(domainListCmd)
+
 		}
 		

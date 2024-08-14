@@ -11,6 +11,7 @@ import (
 type projectInfo struct {
 	Name string `json:"Name"`
 	UUID string `json:"UUID"`
+	DisplayName string `json:"display_name"`
 }
 
 type contextCluster struct {

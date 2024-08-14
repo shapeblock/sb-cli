@@ -37,7 +37,6 @@ func createProject(cmd *cobra.Command, args []string) {
 		fmt.Println("User not logged in")
 		return
 	}
-
 	name := prompt("Project name", true)
 	description := prompt("Project description", false)
 
@@ -102,7 +101,6 @@ func createProject(cmd *cobra.Command, args []string) {
 	defer resp.Body.Close() // Ensure the response body is closed
 
 	// Check the status code of the response
-
 	if resp.StatusCode == http.StatusCreated {
 		fmt.Println("New project created successfully.")
 	} else if resp.StatusCode == http.StatusUnauthorized {
@@ -114,7 +112,6 @@ func createProject(cmd *cobra.Command, args []string) {
 	} else {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
-	//fmt.Println("Response body:", string(body))
 }
 
 func init() {
