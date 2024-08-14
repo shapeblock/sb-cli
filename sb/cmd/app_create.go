@@ -43,15 +43,15 @@ func appCreate(cmd *cobra.Command, args []string) {
 	app := AppCreate{}
 	currentContext := viper.GetString("current-context")
 	//fmt.Println("context",currentContext)
-	if currentContext == ""{
-	projects, err := fetchProjects()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error fetching projects: %v\n", err)
-		return
-	}
-	project := selectProject(projects)
-	app.Project = project.UUID
-	}else{
+	if currentContext == "" {
+		projects, err := fetchProjects()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching projects: %v\n", err)
+			return
+		}
+		project := selectProject(projects)
+		app.Project = project.UUID
+	} else {
 		// Find the UUID of the current context project
 		for _, cluster := range cfg.Contexts.Cluster {
 			for _, project := range cluster.Projects {
@@ -64,20 +64,20 @@ func appCreate(cmd *cobra.Command, args []string) {
 	}
 	// Here you can use the app.Project UUID as needed
 	//fmt.Printf("Using project UUID: %s\n", app.Project)
-	if(currentContext !=""){
-	green := promptui.Styler(promptui.FGGreen)
+	if currentContext != "" {
+		green := promptui.Styler(promptui.FGGreen)
 		fmt.Println(green(fmt.Sprintf("Current Context: %s", currentContext)))
 	}
-	app.Name = prompt("Enter the app name", true)	
+	app.Name = prompt("Enter the app name", true)
 	stackPrompt := promptui.Select{
 		Label: "Select Stack",
 		Items: []string{"php", "java", "python", "node", "go", "ruby", "nginx"},
 	}
 
-	_, stack, err := stackPrompt.Run()
+	_, stack, _ := stackPrompt.Run()
 
 	app.Stack = stack
-	app.Repo = prompt("Enter the git repo name", true)
+	app.Repo = prompt("Enter the git repo url", true)
 	app.Ref = prompt("Enter the git branch name", true)
 
 	jsonData, err := json.Marshal(app)
@@ -94,7 +94,6 @@ func appCreate(cmd *cobra.Command, args []string) {
 
 	// Retrieve the token
 
-
 	token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
@@ -107,7 +106,7 @@ func appCreate(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-    //fmt.Println("Data", string(jsonData))
+	//fmt.Println("Data", string(jsonData))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 

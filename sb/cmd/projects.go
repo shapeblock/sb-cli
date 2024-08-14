@@ -12,11 +12,11 @@ import (
 )
 
 type Project struct {
-	UUID        string `json:"uuid"`
-	Name        string `json:"display_name"`
-	Description string `json:"description"`
-	User        int    `json:"user"`
-	Cluster     ClusterDetail  `json:"cluster,omitempty"`
+	UUID        string        `json:"uuid"`
+	Name        string        `json:"display_name"`
+	Description string        `json:"description"`
+	User        int           `json:"user"`
+	Cluster     ClusterDetail `json:"cluster,omitempty"`
 }
 
 func fetchProjects() ([]Project, error) {
@@ -45,18 +45,18 @@ func fetchProjects() ([]Project, error) {
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
-    if err != nil {
-        return nil, fmt.Errorf("error reading response body: %v", err)
-    }
-    //fmt.Println("Response Body:", string(body))
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %v", err)
+	}
+	//fmt.Println("Response Body:", string(body))
 
 	var projects []Project
 	if err := json.Unmarshal(body, &projects); err != nil {
 		return nil, fmt.Errorf("error decoding response: %v", err)
-		
+
 	}
 	//fmt.Println("Fetched Projects:", projects)
-	return projects,nil
+	return projects, nil
 }
 
 func checkExistingProject(name, sbUrl, token string) error {
@@ -106,7 +106,7 @@ func checkExistingProject(name, sbUrl, token string) error {
 
 var projectsCmd = &cobra.Command{
 	Use:     "projects",
-	Aliases: []string{"project"},
+	Aliases: []string{"project", "proj"},
 	Short:   "Projects are loaded namespaces within a cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like list or add.")

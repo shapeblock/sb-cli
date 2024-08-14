@@ -48,7 +48,6 @@ func appLogs(cmd *cobra.Command, args []string) {
 		return
 	}
 
-
 	fullUrl := fmt.Sprintf("%s/apps/%s/shell-info/", sbUrl, app.UUID)
 
 	req, err := http.NewRequest("GET", fullUrl, nil)

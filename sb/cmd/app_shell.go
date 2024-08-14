@@ -133,9 +133,9 @@ func execIntoPod(podName, namespace, kubeConfig string) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
+
 func init() {
 	appsCmd.AddCommand(shellCmd)
 }

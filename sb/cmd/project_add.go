@@ -18,9 +18,10 @@ type ProjectCreate struct {
 }
 
 var createProjectCmd = &cobra.Command{
-	Use:   "add",
-	Short: "Creates a new project",
-	Run:   createProject,
+	Use:     "add",
+	Aliases: []string{"create"},
+	Short:   "Creates a new project",
+	Run:     createProject,
 }
 
 func createProject(cmd *cobra.Command, args []string) {

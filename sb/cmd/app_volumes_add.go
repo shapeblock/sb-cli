@@ -23,9 +23,10 @@ type VolumePayload struct {
 }
 
 var appVolumeAddCmd = &cobra.Command{
-	Use:   "add",
-	Short: "Add a volume.",
-	Run:   appVolumeAdd,
+	Use:     "add",
+	Aliases: []string{"create"},
+	Short:   "Add a volume.",
+	Run:     appVolumeAdd,
 }
 
 func appVolumeAdd(cmd *cobra.Command, args []string) {
@@ -75,8 +76,7 @@ func appVolumeAdd(cmd *cobra.Command, args []string) {
 	if token == "" {
 		fmt.Println("User not logged in")
 		return
-}
-
+	}
 
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/volumes/", sbUrl, app.UUID)
 
