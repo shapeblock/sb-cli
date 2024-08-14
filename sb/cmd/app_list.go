@@ -24,9 +24,9 @@ import (
 			t := table.NewWriter()
 			t.SetOutputMirror(os.Stdout)
 			t.SetStyle(table.StyleLight)
-			t.AppendHeader(table.Row{"UUID", "Name", "Stack", "Repo", "Ref", "Subpath"})
+			t.AppendHeader(table.Row{"UUID", "Name", "Project","Stack", "Repo", "Ref", "Subpath"})
 			for _, app := range apps {
-				t.AppendRow([]interface{}{app.UUID, app.Name, app.Stack, app.Repo, app.Ref, app.Subpath})
+				t.AppendRow([]interface{}{app.UUID, app.Name, app.Project.Name, app.Stack, app.Repo, app.Ref, app.Subpath})
 				t.AppendSeparator()
 			}
 			t.AppendSeparator()

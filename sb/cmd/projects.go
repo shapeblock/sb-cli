@@ -16,6 +16,7 @@ type Project struct {
 	Name        string `json:"display_name"`
 	Description string `json:"description"`
 	User        int    `json:"user"`
+	App      []App    `json:"apps"`
 	Cluster     ClusterDetail  `json:"cluster,omitempty"`
 }
 
