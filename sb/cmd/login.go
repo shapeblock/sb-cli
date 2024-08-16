@@ -7,17 +7,24 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-
+    "time"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-type UserToken struct {
-	Token string `json:"token"`
+type ContextInfo struct {
+	Endpoint string `json:"endpoint"`
+	Server   string `json:"server"`
+	Token    string `json:"token"`
+	Timestamp string `json:"timestamp"`
 }
 
-// loginCmd represents the login command
+type Config struct {
+	Contexts       map[string]ContextInfo `json:"contexts"`
+	CurrentContext string                `json:"current-context"`
+}
+
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Log in to the Shapeblock server",
@@ -42,11 +49,10 @@ var loginCmd = &cobra.Command{
 			sbUrl = fmt.Sprintf("https://%s", url)
 		}
 
-		// Construct the full URL for token-login endpoint
 		tokenLoginUrl := fmt.Sprintf("%s/api/auth/token/", sbUrl)
 
 		prompt = promptui.Prompt{
-			Label: "Email(enter your username if you're using the open source version)",
+			Label: "Email (enter your username if you're using the open source version)",
 		}
 
 		username, err := prompt.Run()
@@ -66,34 +72,64 @@ var loginCmd = &cobra.Command{
 			return
 		}
 
-		// Call SbLogin function to authenticate
-		token, err := SbLogin(username, password, tokenLoginUrl)
+		// Call SbLogin function to authenticate and get ContextInfo
+		contextInfo, err := SbLogin(username, password, tokenLoginUrl)
 		if err != nil {
 			fmt.Printf("Login failed: %v\n", err)
 			return
 		}
 
-		// check if we are dealing with SB OSS or SaaS
+		// Determine the server type (OSS or SaaS)
 		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/auth/registration/", sbUrl), nil)
 		req.Header.Add("Content-Type", "application/json")
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Printf("Server check failed: %v\n", err)
+			return
+		}
+		defer resp.Body.Close()
 
-		if resp.StatusCode == http.StatusNotFound {
-			viper.Set("server", "oss")
-		} else {
-			viper.Set("server", "saas")
+		serverType := "oss"
+		if resp.StatusCode != http.StatusNotFound {
+			serverType = "saas"
 		}
 
-		fmt.Println("Login successful")
-		viper.Set("endpoint", sbUrl)
-		viper.Set("token", token)
-		viper.WriteConfig()
+		contextInfo.Server = serverType
+		contextInfo.Endpoint = sbUrl
+		contextInfo.Timestamp = time.Now().Format(time.RFC3339)
+
+		// Load existing configuration
+		var cfg Config
+		err = viper.Unmarshal(&cfg)
+		if err != nil {
+			fmt.Printf("Failed to load existing config: %v\n", err)
+			return
+		}
+
+		if cfg.Contexts == nil {
+			cfg.Contexts = make(map[string]ContextInfo)
+		}
+
+		// Update or add the new context
+		cfg.Contexts[username] = contextInfo
+		cfg.CurrentContext = username
+
+		// Save the updated config using Viper
+		viper.Set("contexts", cfg.Contexts)
+		viper.Set("current-context", cfg.CurrentContext)
+		err = viper.WriteConfig()
+		if err != nil {
+			fmt.Printf("Failed to write config: %v\n", err)
+		} else {
+			fmt.Println("Login successful")
+		}
 	},
 }
 
-func SbLogin(username, password, sbUrl string) (string, error) {
+// SbLogin function to authenticate and return ContextInfo
+func SbLogin(username, password, sbUrl string) (ContextInfo, error) {
 	data := map[string]string{
 		"username": username,
 		"password": password,
@@ -102,34 +138,40 @@ func SbLogin(username, password, sbUrl string) (string, error) {
 	// Marshal the data into JSON
 	body, err := json.Marshal(data)
 	if err != nil {
-		return "", err
+		return ContextInfo{}, err
 	}
 
 	// Perform HTTP POST request to token-login endpoint
 	resp, err := http.Post(sbUrl, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		return "", err
+		return ContextInfo{}, err
 	}
 	defer resp.Body.Close()
 
 	// Read response body
 	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return ContextInfo{}, err
 	}
-	//fmt.Println("response", string(responseBody))
 
 	// Check response status code
 	if resp.StatusCode == http.StatusOK {
-		var loginResponse UserToken
-		if err := json.Unmarshal(responseBody, &loginResponse); err != nil {
-			return "", err
+		var loginResponse struct {
+			Token string `json:"token"`
 		}
-		return loginResponse.Token, nil
+		if err := json.Unmarshal(responseBody, &loginResponse); err != nil {
+			return ContextInfo{}, err
+		}
+
+		// Return the ContextInfo with the token
+		return ContextInfo{
+			Endpoint: sbUrl,
+			Token:    loginResponse.Token,
+		}, nil
 	}
 
 	// Handle non-200 status codes
-	return "", fmt.Errorf("login failed with status: %s", resp.Status)
+	return ContextInfo{}, fmt.Errorf("login failed with status: %s", resp.Status)
 }
 
 func init() {

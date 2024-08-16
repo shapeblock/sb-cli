@@ -12,36 +12,43 @@ import (
 )
 
 type Project struct {
-<<<<<<< HEAD
-	UUID        string        `json:"uuid"`
-	Name        string        `json:"display_name"`
-	Description string        `json:"description"`
-	User        int           `json:"user"`
-	Cluster     ClusterDetail `json:"cluster,omitempty"`
-=======
 	UUID        string `json:"uuid"`
 	Name        string `json:"display_name"`
 	Description string `json:"description"`
 	User        int    `json:"user"`
 	App      []App    `json:"apps"`
 	Cluster     ClusterDetail  `json:"cluster,omitempty"`
->>>>>>> 757d3dfd5d7d62dd23c03cf052403073f4b5e14c
 }
 
 func fetchProjects() ([]Project, error) {
 
-	sbUrl := viper.GetString("endpoint")
+	currentContext := viper.GetString("current-context")
+	if currentContext == "" {
+		return nil, fmt.Errorf("no current context set")
+	}
+
+	// Get context information
+	contexts := viper.GetStringMap("contexts")
+	contextInfo, ok := contexts[currentContext].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("context %s not found", currentContext)
+	}
+
+	// Extract endpoint and token
+	sbUrl, _ := contextInfo["endpoint"].(string)
+	token, _ := contextInfo["token"].(string)
+	fmt.Println("data",sbUrl)
+	fmt.Println("data",token)
+	if sbUrl == "" || token == "" {
+		return nil, fmt.Errorf("endpoint or token not found for the current context")
+	}
+	/*sbUrl := viper.GetString("endpoint")
 	if sbUrl == "" {
 		fmt.Println("User not logged in")
-	}
-
+	}*/
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/projects/", sbUrl), nil)
 
-	token := viper.GetString("token")
-	if token == "" {
-		fmt.Println("User not logged in")
-	}
-
+	
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 

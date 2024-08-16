@@ -32,16 +32,22 @@ func domainDelete(cmd *cobra.Command, args []string) {
 	}
 
 
-	sbUrl := viper.GetString("endpoint")
-	if sbUrl == "" {
-		fmt.Println("API endpoint is not set. Please log in.")
-		return
+	currentContext := viper.GetString("current-context")
+	if currentContext == "" {
+		fmt.Errorf("no current context set")
 	}
 
-	token := viper.GetString("token")
-	if token == "" {
-		fmt.Println("Authentication token is not set. Please log in.")
-		return
+	// Get context information
+	contexts := viper.GetStringMap("contexts")
+	contextInfo, ok := contexts[currentContext].(map[string]interface{})
+	if !ok {
+		fmt.Errorf("context %s not found", currentContext)
+	}
+
+	sbUrl, _ := contextInfo["endpoint"].(string)
+	token, _ := contextInfo["token"].(string)
+	if sbUrl == "" || token == "" {
+		fmt.Errorf("endpoint or token not found for the current context")
 	}
 
 

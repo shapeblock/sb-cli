@@ -1,89 +1,70 @@
 package cmd
+
 import (
 	"fmt"
-	"os"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var switchContextCmd = &cobra.Command{
+var switchCmd = &cobra.Command{
 	Use:   "switch",
-	Short: "Switch to a different context",
-	Run:   switchContext,
-}
+	Short: "Switch between contexts",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Load existing configuration
+		var cfg Config
+		err := viper.Unmarshal(&cfg)
+		if err != nil {
+			fmt.Printf("Failed to load existing config: %v\n", err)
+			return
+		}
 
-func switchContext(cmd *cobra.Command, args []string) {
-    // Load existing configuration
-    if err := viper.ReadInConfig(); err != nil {
-        fmt.Fprintf(os.Stderr, "Error reading config file: %v\n", err)
-        return
-    }
+		// List all available contexts
+		contextNames := make([]string, 0, len(cfg.Contexts))
+		for name := range cfg.Contexts {
+			contextNames = append(contextNames, name)
+		}
 
-    // Define the configuration structure
-    var cfg config
+		
+		currentContext := viper.GetString("current-context")
 
-    // Check if contexts exist in the configuration file
-    if err := viper.Unmarshal(&cfg); err != nil {
-        fmt.Fprintf(os.Stderr, "Error unmarshaling config: %v\n", err)
-        return
-    }
+		
+		for i, name := range contextNames {
+			if name == currentContext {
+				contextNames[i] = fmt.Sprintf("%s (current)", name)
+			}
+		}
 
-    // Get the current context
-    currentContext := viper.GetString("current-context")
+		prompt := promptui.Select{
+			Label: "Select Context",
+			Items: contextNames,
+			Size:  10,
+			Templates: &promptui.SelectTemplates{
+				Active:   `{{ . | bold }}`, 
+				Inactive: `{{ . }}`,        
+				Selected: `{{ . | cyan }}`,
+				Help:     `{{ . }}`,       
+			},
+		}
 
-    // Define project names slice
-    var projectNames []string
+		_, selectedContext, err := prompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed: %v\n", err)
+			return
+		}
 
-    // List available projects
-    projectContextMap := make(map[string]string)
+		viper.Set("current-context", selectedContext)
 
-        for _, cluster := range cfg.Contexts.Cluster {
-            for _, project := range cluster.Projects {
-                projectName := fmt.Sprintf("%s", project.Name)
-                if projectName == currentContext {
-                    projectName += " *"
-                }
-                projectNames = append(projectNames, projectName)
-                projectContextMap[projectName] = project.Name
-            }
-        }
-
-    // Prompt for project selection
-    prompt := promptui.Select{
-        Label: "Select a project",
-        Items: projectNames,
-    }
-
-    selectedProjectIndex, _, err := prompt.Run()
-    if err != nil {
-        fmt.Printf("Prompt failed %v\n", err)
-        return
-    }
-
-    // Get the selected project name
-
-    selectedProject := projectNames[selectedProjectIndex]
-
-    // Remove the asterisk before updating the context
-
-    if len(selectedProject) > 1 && selectedProject[len(selectedProject)-1] == '*' {
-        selectedProject = selectedProject[:len(selectedProject)-2]
-    }
-    // Update the current context based on the selected project
-
-    cfg.CurrentContext = projectContextMap[selectedProject]
-    viper.Set("current-context", cfg.CurrentContext)
-
-    // Write the updated configuration back to Viper
-    if err := viper.WriteConfig(); err != nil {
-        fmt.Fprintf(os.Stderr, "Error writing config file: %v\n", err)
-        return
-    }
-
-    fmt.Println("Context switched successfully to", cfg.CurrentContext)
+		// Save the updated configuration
+		err = viper.WriteConfig()
+		if err != nil {
+			fmt.Printf("Failed to write config: %v\n", err)
+		} else {
+			fmt.Printf("Switched to context: %s\n", selectedContext)
+		}
+	},
 }
 
 func init() {
-	contextCmd.AddCommand(switchContextCmd)
+	rootCmd.AddCommand(switchCmd)
 }

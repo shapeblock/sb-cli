@@ -33,41 +33,8 @@ func appCreate(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	var cfg config
-	// Check if contexts exist in the configuration file
-	if err := viper.Unmarshal(&cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "Error unmarshaling config: %v\n", err)
-		return
-	}
 
 	app := AppCreate{}
-	currentContext := viper.GetString("current-context")
-	//fmt.Println("context",currentContext)
-	if currentContext == "" {
-		projects, err := fetchProjects()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error fetching projects: %v\n", err)
-			return
-		}
-		project := selectProject(projects)
-		app.Project = project.UUID
-	} else {
-		// Find the UUID of the current context project
-		for _, cluster := range cfg.Contexts.Cluster {
-			for _, project := range cluster.Projects {
-				if project.Name == currentContext {
-					app.Project = project.UUID
-					break
-				}
-			}
-		}
-	}
-	// Here you can use the app.Project UUID as needed
-	//fmt.Printf("Using project UUID: %s\n", app.Project)
-	if currentContext != "" {
-		green := promptui.Styler(promptui.FGGreen)
-		fmt.Println(green(fmt.Sprintf("Current Context: %s", currentContext)))
-	}
 	app.Name = prompt("Enter the app name", true)
 	stackPrompt := promptui.Select{
 		Label: "Select Stack",
@@ -86,18 +53,22 @@ func appCreate(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	sbUrl := viper.GetString("endpoint")
-	if sbUrl == "" {
-		fmt.Println("User not logged in")
-		return
+	currentContext := viper.GetString("current-context")
+	if currentContext == "" {
+		fmt.Errorf("no current context set")
 	}
 
-	// Retrieve the token
+	// Get context information
+	contexts := viper.GetStringMap("contexts")
+	contextInfo, ok := contexts[currentContext].(map[string]interface{})
+	if !ok {
+		fmt.Errorf("context %s not found", currentContext)
+	}
 
-	token := viper.GetString("token")
-	if token == "" {
-		fmt.Println("User not logged in")
-		return
+	sbUrl, _ := contextInfo["endpoint"].(string)
+	token, _ := contextInfo["token"].(string)
+	if sbUrl == "" || token == "" {
+		fmt.Errorf("endpoint or token not found for the current context")
 	}
 
 	fullUrl := sbUrl + "/api/apps/"
