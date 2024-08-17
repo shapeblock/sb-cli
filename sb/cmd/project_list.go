@@ -18,7 +18,6 @@ func listProjects(cmd *cobra.Command, args []string) {
 	// TODO: if cluster context is set, list all projects in cluster
 	projects, err := fetchProjects()
 	apps,err:=fetchApps()
-	//apps,err:=fetchApps()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching projects: %v\n", err)
 		return
@@ -34,11 +33,12 @@ func listProjects(cmd *cobra.Command, args []string) {
 				for _, app := range apps {
 					t.AppendRow([]interface{}{app.UUID, app.Name,app.Stack,app.Repo,app.Ref,app.Subpath})
 				}
-				break // Exit the loop as we've found the project
+				break
 			}
 		}
 	}else{
-	for _, project := range projects {
+		t.AppendHeader(table.Row{"UUID", "Name", "Description"})
+		for _, project := range projects {
 		t.AppendRow([]interface{}{project.UUID, project.Name, project.Description})
 		t.AppendSeparator()
 	}

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
+      "log"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -68,19 +68,17 @@ func execute(cmd *cobra.Command, args []string) {
 	cluster := Cluster{}
 	currentContext := viper.GetString("current-context")
 	if currentContext == "" {
-		fmt.Errorf("no current context set")
+		log.Printf("no current context set")
 	}
 
 	contexts := viper.GetStringMap("contexts")
 	contextInfo, ok := contexts[currentContext].(map[string]interface{})
 	if !ok {
-	 fmt.Errorf("context %s not found", currentContext)
+	 log.Printf("context %s not found", currentContext)
 	}
 	sbUrl, _ := contextInfo["endpoint"].(string)
 	token, _ := contextInfo["token"].(string)
-	fmt.Println("data",sbUrl)
-	fmt.Println("data",token)
-	
+
 	if sbUrl == "" || token == "" {
 		 fmt.Errorf("endpoint or token not found for the current context")
 	}
@@ -291,14 +289,14 @@ func selectNodeSize(sizes [][]string) string {
 func fetchNodeSizes(cloud string) [][]string {
 	currentContext := viper.GetString("current-context")
 	if currentContext == "" {
-		fmt.Errorf("no current context set")
+		log.Printf("no current context set")
 	}
 
 	// Get context information
 	contexts := viper.GetStringMap("contexts")
 	contextInfo, ok := contexts[currentContext].(map[string]interface{})
 	if !ok {
-		fmt.Errorf("context %s not found", currentContext)
+		log.Printf("context %s not found", currentContext)
 	}
 
 	sbUrl, _ := contextInfo["endpoint"].(string)

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -36,6 +35,15 @@ func appCreate(cmd *cobra.Command, args []string) {
 
 	app := AppCreate{}
 	app.Name = prompt("Enter the app name", true)
+	projects, err := fetchProjects()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching projects: %v\n", err)
+		return
+	}
+
+	project := selectProject(projects)
+	app.Project = project.UUID
+	
 	stackPrompt := promptui.Select{
 		Label: "Select Stack",
 		Items: []string{"php", "java", "python", "node", "go", "ruby", "nginx"},
@@ -77,7 +85,6 @@ func appCreate(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	//fmt.Println("Data", string(jsonData))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
@@ -88,6 +95,11 @@ func appCreate(cmd *cobra.Command, args []string) {
 	}
 
 	defer resp.Body.Close()
+	/*bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 
+	}
+	fmt.Println("Response Body:", string(bodyBytes))*/
 
 	if resp.StatusCode == http.StatusCreated {
 		fmt.Println("New app created successfully.")

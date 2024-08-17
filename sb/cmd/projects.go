@@ -37,18 +37,10 @@ func fetchProjects() ([]Project, error) {
 	// Extract endpoint and token
 	sbUrl, _ := contextInfo["endpoint"].(string)
 	token, _ := contextInfo["token"].(string)
-	fmt.Println("data",sbUrl)
-	fmt.Println("data",token)
 	if sbUrl == "" || token == "" {
 		return nil, fmt.Errorf("endpoint or token not found for the current context")
 	}
-	/*sbUrl := viper.GetString("endpoint")
-	if sbUrl == "" {
-		fmt.Println("User not logged in")
-	}*/
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/projects/", sbUrl), nil)
-
-	
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
@@ -75,7 +67,7 @@ func fetchProjects() ([]Project, error) {
 	return projects, nil
 }
 
-func checkExistingProject(name, sbUrl, token string) error {
+/*func checkExistingProject(name, sbUrl, token string) error {
 	url := fmt.Sprintf("%s/api/projects/", sbUrl)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -118,7 +110,7 @@ func checkExistingProject(name, sbUrl, token string) error {
 	}
 
 	return nil
-}
+}*/
 
 var projectsCmd = &cobra.Command{
 	Use:     "projects",
