@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 type ProjectCreate struct {
@@ -26,24 +25,8 @@ var createProjectCmd = &cobra.Command{
 
 func createProject(cmd *cobra.Command, args []string) {
 	// API call
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		fmt.Printf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		fmt.Printf("context %s not found", currentContext)
-	}
-
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	server,_:=contextInfo["server"].(string)
-	if sbUrl == "" || token == "" {
-	   fmt.Printf("endpoint or token not found for the current context")
-	}
+	
+    sbUrl, token, server, err := getContext()
 	name := prompt("Project name", true)
 	description := prompt("Project description", false)
 

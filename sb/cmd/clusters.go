@@ -10,10 +10,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	//"k8s.io/client-go/tools/auth"
 )
 
@@ -37,25 +35,7 @@ type ClusterNode struct {
 
 func fetchClusters() ([]ClusterDetail, error) {
 
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		return nil, fmt.Errorf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("context %s not found", currentContext)
-	}
-
-	// Extract endpoint and token
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		return nil, fmt.Errorf("endpoint or token not found for the current context")
-	}
-
+	sbUrl, token, _,err := getContext()
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
 	//log.Printf("Token: %s", token)
 	req.Header.Add("Content-Type", "application/json")
@@ -126,9 +106,9 @@ func checkClusterStatus(clusterUUID, sbUrl string) error {
 	}
 	defer resp.Body.Close()
 
-	/*if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}*/
+	}
 
 	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)

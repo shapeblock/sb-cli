@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/spf13/viper"
-
 	"github.com/spf13/cobra"
 )
 
@@ -21,25 +18,7 @@ type Project struct {
 }
 
 func fetchProjects() ([]Project, error) {
-
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		return nil, fmt.Errorf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("context %s not found", currentContext)
-	}
-
-	// Extract endpoint and token
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		return nil, fmt.Errorf("endpoint or token not found for the current context")
-	}
+    sbUrl, token, _, err := getContext()
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/projects/", sbUrl), nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
@@ -66,52 +45,6 @@ func fetchProjects() ([]Project, error) {
 	//fmt.Println("Fetched Projects:", projects)
 	return projects, nil
 }
-
-/*func checkExistingProject(name, sbUrl, token string) error {
-	url := fmt.Sprintf("%s/api/projects/", sbUrl)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set the necessary headers
-	req.Header.Add("Authorization", fmt.Sprintf("Token %s", token))
-
-	// Send the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	// Read the response body
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Parse the response
-	var projects []Project
-	if err := json.Unmarshal(body, &projects); err != nil {
-		return fmt.Errorf("failed to parse response body: %w", err)
-	}
-
-	// Check if the project name already exists
-	for _, p := range projects {
-		if p.Name == name {
-			return fmt.Errorf("project name already exists")
-		}
-	}
-
-	return nil
-}*/
-
 var projectsCmd = &cobra.Command{
 	Use:     "projects",
 	Aliases: []string{"project", "proj"},

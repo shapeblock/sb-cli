@@ -8,7 +8,6 @@ import (
 
     "github.com/jedib0t/go-pretty/v6/table"
     "github.com/spf13/cobra"
-    "github.com/spf13/viper"
 )
 
 var deployStatusCmd = &cobra.Command{
@@ -30,24 +29,7 @@ func deployStatus(cmd *cobra.Command, args []string) {
         return
     }
 
-    currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		fmt.Errorf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		fmt.Errorf("context %s not found", currentContext)
-	}
-
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		fmt.Errorf("endpoint or token not found for the current context")
-	}
-
+    sbUrl, token, _,err := getContext()
     t := table.NewWriter()
     t.SetOutputMirror(os.Stdout)
     t.SetStyle(table.StyleLight)

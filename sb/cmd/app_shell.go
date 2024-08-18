@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -39,24 +38,7 @@ func appShell(cmd *cobra.Command, args []string) {
 	app := selectApp(apps)
 
 	// API call
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		fmt.Errorf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		fmt.Errorf("context %s not found", currentContext)
-	}
-
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		fmt.Errorf("endpoint or token not found for the current context")
-	}
-
+	sbUrl, token, _,err := getContext()
 	fullUrl := fmt.Sprintf("%s/apps/%s/shell-info/", sbUrl, app.UUID)
 
 	req, err := http.NewRequest("GET", fullUrl, nil)

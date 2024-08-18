@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"golang.org/x/term"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"bufio"
 )
 
@@ -105,24 +104,7 @@ func appSecretVarAdd(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		fmt.Errorf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		fmt.Errorf("context %s not found", currentContext)
-	}
-
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		fmt.Errorf("endpoint or token not found for the current context")
-	}
-
+	sbUrl, token,_, err := getContext()
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl, app.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))

@@ -10,7 +10,6 @@ import (
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 type App struct {
@@ -23,7 +22,9 @@ type App struct {
 	User    int    `json:"user"`
 	CustomDomain  string  `json:"custom_domain"`
 	Project ProjectDetail `json:"project"`
+
 }
+
 
 
 type EnvVar struct {
@@ -164,23 +165,7 @@ func ConvertSelectToBuildVars(buildVars []*BuildSelect) []BuildVar {
 
 func fetchAppDetail(appUuid string) (AppDetail, error) {
 
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		fmt.Errorf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		fmt.Errorf("context %s not found", currentContext)
-	}
-
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		fmt.Errorf("endpoint or token not found for the current context")
-	}
+	sbUrl, token, _,err := getContext()
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/%s/", sbUrl, appUuid), nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
@@ -202,23 +187,7 @@ func fetchAppDetail(appUuid string) (AppDetail, error) {
 
 func fetchApps() ([]App, error) {
 
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		fmt.Errorf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		fmt.Errorf("context %s not found", currentContext)
-	}
-
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		fmt.Errorf("endpoint or token not found for the current context")
-	}
+	sbUrl, token,_, err := getContext()
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/", sbUrl), nil)
 	req.Header.Add("Content-Type", "application/json")
@@ -244,23 +213,7 @@ func fetchApps() ([]App, error) {
 
 func fetchVolume(appUuid string) ([]Volume, error) {
 
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		fmt.Errorf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		fmt.Errorf("context %s not found", currentContext)
-	}
-
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		fmt.Errorf("endpoint or token not found for the current context")
-	}
+	sbUrl, token, _,err := getContext()
 	req, _ := http.NewRequest("GET",fmt.Sprintf("%s/api/apps/%s/volumes/", sbUrl,appUuid), nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
@@ -282,23 +235,7 @@ func fetchVolume(appUuid string) ([]Volume, error) {
 
 func fetchSecret(appUuid string) ([]Secret, error) {
 
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		fmt.Errorf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		fmt.Errorf("context %s not found", currentContext)
-	}
-
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		fmt.Errorf("endpoint or token not found for the current context")
-	}
+	sbUrl, token, _,err := getContext()
 	req, _ := http.NewRequest("GET",fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl,appUuid), nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
@@ -324,8 +261,8 @@ func fetchSecret(appUuid string) ([]Secret, error) {
 func selectApp(apps []App) App {
 	templates := &promptui.SelectTemplates{
 		Label:    "{{ . }}?",
-		Active:   "\U0001F449 {{ .Name | cyan }}",
-		Inactive: "  {{ .Name | cyan }}",
+		Active:   "\U0001F449 {{ .Name | cyan }}({{ .Project.Name | red }})",
+		Inactive: "  {{ .Name | cyan }} ({{ .Project.Name | red }})",
 		Selected: "\U0001F3C1 {{ .Name | red | cyan }}",
 	}
 
