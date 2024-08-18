@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
+      "log"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -66,10 +66,21 @@ func selectProvider(providers []Provider) Provider {
 
 func execute(cmd *cobra.Command, args []string) {
 	cluster := Cluster{}
+	currentContext := viper.GetString("current-context")
+	if currentContext == "" {
+		log.Printf("no current context set")
+	}
 
-	sbUrl := viper.GetString("endpoint")
-	if sbUrl == "" {
-		return
+	contexts := viper.GetStringMap("contexts")
+	contextInfo, ok := contexts[currentContext].(map[string]interface{})
+	if !ok {
+	 log.Printf("context %s not found", currentContext)
+	}
+	sbUrl, _ := contextInfo["endpoint"].(string)
+	token, _ := contextInfo["token"].(string)
+
+	if sbUrl == "" || token == "" {
+		 fmt.Errorf("endpoint or token not found for the current context")
 	}
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
@@ -119,7 +130,7 @@ func execute(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	sbUrl = viper.GetString("endpoint")
+	/*sbUrl = viper.GetString("endpoint")
 	if sbUrl == "" {
 		fmt.Println("User not logged in")
 		return
@@ -129,7 +140,7 @@ func execute(cmd *cobra.Command, args []string) {
 	if token == "" {
 		fmt.Println("User not logged in")
 		return
-	}
+	}*/
 
 	fullUrl := sbUrl + "/api/clusters/"
 
@@ -190,9 +201,22 @@ func prompt(label string, required bool) string {
 }
 
 func fetchAndSelectRegion(cloud string) string {
-	sbUrl := viper.GetString("endpoint")
-	if sbUrl == "" {
-		fmt.Println("User not logged in")
+	currentContext := viper.GetString("current-context")
+	if currentContext == "" {
+		fmt.Errorf("no current context set")
+	}
+
+	// Get context information
+	contexts := viper.GetStringMap("contexts")
+	contextInfo, ok := contexts[currentContext].(map[string]interface{})
+	if !ok {
+		fmt.Errorf("context %s not found", currentContext)
+	}
+
+	sbUrl, _ := contextInfo["endpoint"].(string)
+	token, _ := contextInfo["token"].(string)
+	if sbUrl == "" || token == "" {
+		fmt.Errorf("endpoint or token not found for the current context")
 	}
 
 	url := fmt.Sprintf("%s/api/providers/region-choices/%s/", sbUrl, cloud)
@@ -263,9 +287,22 @@ func selectNodeSize(sizes [][]string) string {
 }
 
 func fetchNodeSizes(cloud string) [][]string {
-	sbUrl := viper.GetString("endpoint")
-	if sbUrl == "" {
-		fmt.Println("User not logged in")
+	currentContext := viper.GetString("current-context")
+	if currentContext == "" {
+		log.Printf("no current context set")
+	}
+
+	// Get context information
+	contexts := viper.GetStringMap("contexts")
+	contextInfo, ok := contexts[currentContext].(map[string]interface{})
+	if !ok {
+		log.Printf("context %s not found", currentContext)
+	}
+
+	sbUrl, _ := contextInfo["endpoint"].(string)
+	token, _ := contextInfo["token"].(string)
+	if sbUrl == "" || token == "" {
+		fmt.Errorf("endpoint or token not found for the current context")
 	}
 
 	url := fmt.Sprintf("%s/api/providers/size-choices/%s/", sbUrl, cloud)

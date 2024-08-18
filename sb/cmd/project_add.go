@@ -26,33 +26,39 @@ var createProjectCmd = &cobra.Command{
 
 func createProject(cmd *cobra.Command, args []string) {
 	// API call
-	sbUrl := viper.GetString("endpoint")
-	if sbUrl == "" {
-		fmt.Println("User not logged in")
-		return
+	currentContext := viper.GetString("current-context")
+	if currentContext == "" {
+		fmt.Printf("no current context set")
 	}
 
-	token := viper.GetString("token")
-	if token == "" {
-		fmt.Println("User not logged in")
-		return
+	// Get context information
+	contexts := viper.GetStringMap("contexts")
+	contextInfo, ok := contexts[currentContext].(map[string]interface{})
+	if !ok {
+		fmt.Printf("context %s not found", currentContext)
+	}
+
+	sbUrl, _ := contextInfo["endpoint"].(string)
+	token, _ := contextInfo["token"].(string)
+	server,_:=contextInfo["server"].(string)
+	if sbUrl == "" || token == "" {
+	   fmt.Printf("endpoint or token not found for the current context")
 	}
 	name := prompt("Project name", true)
 	description := prompt("Project description", false)
 
 	//check if the project name already exists
 
-	if err := checkExistingProject(name, sbUrl, token); err != nil {
+	/*if err := checkExistingProject(name, sbUrl, token); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return
-	}
+	}*/
 
 	project := ProjectCreate{
 		Name:        name,
 		Description: description,
 	}
 
-	server := viper.GetString("server")
 	if server == "saas" {
 		clusters, err := fetchClusters()
 		if err != nil {
@@ -97,7 +103,6 @@ func createProject(cmd *cobra.Command, args []string) {
 		fmt.Println(err)
 		return
 	}
-
 	defer resp.Body.Close() // Ensure the response body is closed
 
 	// Check the status code of the response

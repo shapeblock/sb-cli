@@ -30,17 +30,23 @@ func deployStatus(cmd *cobra.Command, args []string) {
         return
     }
 
-    sbUrl := viper.GetString("endpoint")
-    if sbUrl == "" {
-        fmt.Println("User not logged in")
-        return
-    }
- 
-   token := viper.GetString("token")
-    if token == "" {
-        fmt.Println("User not logged in")
-        return
-    }
+    currentContext := viper.GetString("current-context")
+	if currentContext == "" {
+		fmt.Errorf("no current context set")
+	}
+
+	// Get context information
+	contexts := viper.GetStringMap("contexts")
+	contextInfo, ok := contexts[currentContext].(map[string]interface{})
+	if !ok {
+		fmt.Errorf("context %s not found", currentContext)
+	}
+
+	sbUrl, _ := contextInfo["endpoint"].(string)
+	token, _ := contextInfo["token"].(string)
+	if sbUrl == "" || token == "" {
+		fmt.Errorf("endpoint or token not found for the current context")
+	}
 
     t := table.NewWriter()
     t.SetOutputMirror(os.Stdout)

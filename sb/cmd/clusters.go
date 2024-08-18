@@ -37,13 +37,23 @@ type ClusterNode struct {
 
 func fetchClusters() ([]ClusterDetail, error) {
 
-	sbUrl := viper.GetString("endpoint")
-	if sbUrl == "" {
-		fmt.Println("User not logged in")
+	currentContext := viper.GetString("current-context")
+	if currentContext == "" {
+		return nil, fmt.Errorf("no current context set")
 	}
-	token := viper.GetString("token")
-	if token == "" {
-		fmt.Println("User not logged in")
+
+	// Get context information
+	contexts := viper.GetStringMap("contexts")
+	contextInfo, ok := contexts[currentContext].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("context %s not found", currentContext)
+	}
+
+	// Extract endpoint and token
+	sbUrl, _ := contextInfo["endpoint"].(string)
+	token, _ := contextInfo["token"].(string)
+	if sbUrl == "" || token == "" {
+		return nil, fmt.Errorf("endpoint or token not found for the current context")
 	}
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)

@@ -23,17 +23,25 @@ type Provider struct {
 
 func fetchProviders() ([]Provider, error) {
 
-	sbUrl := viper.GetString("endpoint")
-	if sbUrl == "" {
-		fmt.Println("User not logged in")
+	currentContext := viper.GetString("current-context")
+	if currentContext == "" {
+		return nil, fmt.Errorf("no current context set")
+	}
+
+	// Get context information
+	contexts := viper.GetStringMap("contexts")
+	contextInfo, ok := contexts[currentContext].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("context %s not found", currentContext)
+	}
+
+	sbUrl, _ := contextInfo["endpoint"].(string)
+	token, _ := contextInfo["token"].(string)
+	if sbUrl == "" || token == "" {
+		return nil, fmt.Errorf("endpoint or token not found for the current context")
 	}
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/providers/", sbUrl), nil)
-
-	token := viper.GetString("token")
-	if token == "" {
-		fmt.Println("User not logged in")
-	}
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
