@@ -3,8 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
 
@@ -14,41 +14,38 @@ import (
 )
 
 type App struct {
-	UUID    string `json:"uuid"`
-	Name    string `json:"name"`
-	Stack   string `json:"stack"`
-	Repo    string `json:"repo"`
-	Ref     string `json:"ref"`
-	Subpath string `json:"sub_path"`
-	User    int    `json:"user"`
-	CustomDomain  string  `json:"custom_domain"`
+	UUID    string        `json:"uuid"`
+	Name    string        `json:"name"`
+	Stack   string        `json:"stack"`
+	Repo    string        `json:"repo"`
+	Ref     string        `json:"ref"`
+	Subpath string        `json:"sub_path"`
+	User    int           `json:"user"`
 	Project ProjectDetail `json:"project"`
 }
-
 
 type EnvVar struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
 
-type BuildVar struct{
+type BuildVar struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
-type Secret struct{
-	Key string `json:"key"`
+type Secret struct {
+	Key        string `json:"key"`
 	IsSelected bool
 }
 
 type SecretVar struct {
-	UUID        string `json:"uuid"`
+	UUID string `json:"uuid"`
 	//Name      string json:"name"
-	Key       string `json:"key"`
-	Value     string  `json:"value"`
-
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
-type SecretSelect struct{
+type SecretSelect struct {
 	Key        string `json:"key"`
 	Value      string `json:"value"`
 	IsSelected bool
@@ -58,12 +55,11 @@ type EnvVarSelect struct {
 	Value      string `json:"value"`
 	IsSelected bool
 }
-type VolumeSelect struct{
-	Name    string `json:"name"`
-	MountPath string `json:"mount_path"`
-	Size int `json:"size"`
+type VolumeSelect struct {
+	Name       string `json:"name"`
+	MountPath  string `json:"mount_path"`
+	Size       int    `json:"size"`
 	IsSelected bool
-
 }
 
 type BuildSelect struct {
@@ -77,19 +73,25 @@ type ProjectDetail struct {
 	UUID string `json:"uuid"`
 }
 
+type CustomDomainDetail struct {
+	Id     int    `json:"id"`
+	Domain string `json:"domain"`
+}
+
 type AppDetail struct {
-	UUID    string        `json:"uuid"`
-	Name    string        `json:"name"`
-	Stack   string        `json:"stack"`
-	Repo    string        `json:"repo"`
-	Ref     string        `json:"ref"`
-	Subpath string        `json:"sub_path"`
-	User    int           `json:"user"`
-	Project ProjectDetail `json:"project"`
-	EnvVars []EnvVar      `json:"env_vars"`
-	Volumes []Volume      `json:"volumes"`
-	BuildVars []BuildVar `json:"build_vars"`
-	SecretVars  []SecretVar  `json:"secrets"`
+	UUID          string               `json:"uuid"`
+	Name          string               `json:"name"`
+	Stack         string               `json:"stack"`
+	Repo          string               `json:"repo"`
+	Ref           string               `json:"ref"`
+	Subpath       string               `json:"sub_path"`
+	User          int                  `json:"user"`
+	Project       ProjectDetail        `json:"project"`
+	EnvVars       []EnvVar             `json:"env_vars"`
+	Volumes       []Volume             `json:"volumes"`
+	BuildVars     []BuildVar           `json:"build_vars"`
+	SecretVars    []SecretVar          `json:"secrets"`
+	CustomDomains []CustomDomainDetail `json:"custom_domains"`
 }
 
 func ConvertEnvVarsToSelect(envVars []EnvVar) []*EnvVarSelect {
@@ -128,13 +130,13 @@ func ConvertSecretVarsToSelect(secretVars []SecretVar) []*SecretSelect {
 	return selectSecretVars
 }
 
-func ConvertVolumeToSelect(volumes []Volume) []*VolumeSelect{
+func ConvertVolumeToSelect(volumes []Volume) []*VolumeSelect {
 	var selectedVolumes []*VolumeSelect
-	for _, vol:=range volumes{
-		selectedVolumes=append(selectedVolumes, &VolumeSelect{
-			Name: vol.Name,
-			MountPath: vol.MountPath,
-			Size: vol.Size,
+	for _, vol := range volumes {
+		selectedVolumes = append(selectedVolumes, &VolumeSelect{
+			Name:       vol.Name,
+			MountPath:  vol.MountPath,
+			Size:       vol.Size,
 			IsSelected: false,
 		})
 	}
@@ -174,8 +176,7 @@ func fetchAppDetail(appUuid string) (AppDetail, error) {
 	token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
-}
-
+	}
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
@@ -219,9 +220,9 @@ func fetchApps() ([]App, error) {
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-    if err != nil {
-        return nil, fmt.Errorf("error reading response body: %v", err)
-    }
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %v", err)
+	}
 	var apps []App
 	if err := json.Unmarshal(body, &apps); err != nil {
 		return nil, err
@@ -236,17 +237,17 @@ func fetchVolume(appUuid string) ([]Volume, error) {
 	if sbUrl == "" {
 		fmt.Println("User not logged in")
 	}
-	req, _ := http.NewRequest("GET",fmt.Sprintf("%s/api/apps/%s/volumes/", sbUrl,appUuid), nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/%s/volumes/", sbUrl, appUuid), nil)
 
 	token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
 	}
 
-/*token, err := GetToken(sbUrl)
-if err != nil {
-    fmt.Printf("error getting token: %v\n", err)
-}*/
+	/*token, err := GetToken(sbUrl)
+	  if err != nil {
+	      fmt.Printf("error getting token: %v\n", err)
+	  }*/
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
@@ -272,12 +273,12 @@ func fetchSecret(appUuid string) ([]Secret, error) {
 	if sbUrl == "" {
 		fmt.Println("User not logged in")
 	}
-	req, _ := http.NewRequest("GET",fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl,appUuid), nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl, appUuid), nil)
 	token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
 	}
-	
+
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
@@ -297,7 +298,6 @@ func fetchSecret(appUuid string) ([]Secret, error) {
 }
 
 //function for masking the secret value
-
 
 func selectApp(apps []App) App {
 	templates := &promptui.SelectTemplates{
@@ -330,8 +330,6 @@ func selectApp(apps []App) App {
 
 	return apps[index]
 }
-
-
 
 func selectEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSelect, error) {
 	const doneKey = "Done"
@@ -490,7 +488,7 @@ func selectVolVars(selectedPos int, allVars []*VolumeSelect) ([]*VolumeSelect, e
 	if len(allVars) > 0 && allVars[0].Name != doneKey {
 		var vars = []*VolumeSelect{
 			{
-				Name:   doneKey,
+				Name:      doneKey,
 				MountPath: "Complete Selection",
 			},
 		}
@@ -535,7 +533,6 @@ func selectVolVars(selectedPos int, allVars []*VolumeSelect) ([]*VolumeSelect, e
 	}
 	return selectedVars, nil
 }
-
 
 func selectUpdatedEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSelect, error) {
 	const doneKey = "Done"
@@ -587,7 +584,6 @@ func selectUpdatedEnvVars(selectedPos int, allVars []*EnvVarSelect) ([]*EnvVarSe
 	}
 	return selectedVars, nil
 }
-
 
 func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, error) {
 	const doneKey = "Done"
@@ -641,9 +637,9 @@ func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, e
 }
 
 var appsCmd = &cobra.Command{
-	Use:   "apps",
-	Aliases: []string{"app"}, 
-	Short: "Manage apps",
+	Use:     "apps",
+	Aliases: []string{"app"},
+	Short:   "Manage apps",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like list or add.")
 	},
@@ -658,32 +654,31 @@ var appEnvVarCmd = &cobra.Command{
 }
 
 var appVolumeCmd = &cobra.Command{
-	Use:   "vol",
-	Aliases: []string{"volume"}, 
-	Short: "Manage app volumes.",
+	Use:     "vol",
+	Aliases: []string{"volume"},
+	Short:   "Manage app volumes.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like add or delete.")
 	},
 }
 
 var deployCmd = &cobra.Command{
-	Use:   "deploy",
-	Aliases: []string{"deploys"}, 
-	Short: "Manage app deployment.",
+	Use:     "deploy",
+	Aliases: []string{"deploys"},
+	Short:   "Manage app deployment.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like create or list.")
 	},
 }
 
 var appSecretCmd = &cobra.Command{
-	Use:   "secret",
-	Aliases: []string{"secrets"}, 
-	Short: "Manage Secrets",
+	Use:     "secret",
+	Aliases: []string{"secrets"},
+	Short:   "Manage Secrets",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Error: must also specify an action like create or list or delete.")
 	},
 }
-
 
 var appBuiltEnvCmd = &cobra.Command{
 	Use:   "build-env",

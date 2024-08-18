@@ -53,7 +53,7 @@ func createDeployment(cmd *cobra.Command, args []string) {
 		fmt.Println("User not logged in")
 		return
 	}
-	
+
 	token := viper.GetString("token")
 	if token == "" {
 		fmt.Println("User not logged in")
@@ -130,7 +130,7 @@ func createDeployment(cmd *cobra.Command, args []string) {
 			fmt.Printf("Unable to decode podinfo from response: %v\n", err)
 			os.Exit(1)
 		}
-		
+
 		decodedKubeConfig, err := base64.StdEncoding.DecodeString(podInfo.KubeConfig)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to decode kubeconfig: %v\n", err)
@@ -140,6 +140,7 @@ func createDeployment(cmd *cobra.Command, args []string) {
 			fmt.Fprintf(os.Stderr, "Failed to tail logs: %v\n", err)
 			os.Exit(1)
 		}
+		// TODO: fetch helm status
 
 	}
 
