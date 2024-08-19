@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+    "os"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -30,6 +31,14 @@ var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Log in to the Shapeblock server",
 	Run: func(cmd *cobra.Command, args []string) {
+        err := performLogin()
+		if err != nil {
+			fmt.Printf("Login failed: %v\n", err)
+		}
+	},
+}
+
+func performLogin() error{
 		endpoint := viper.GetString("endpoint")
 
 		prompt := promptui.Prompt{
@@ -40,7 +49,6 @@ var loginCmd = &cobra.Command{
 		url, err := prompt.Run()
 		if err != nil {
 			fmt.Printf("Prompt failed: %v\n", err)
-			return
 		}
 
 		var sbUrl string
@@ -59,7 +67,6 @@ var loginCmd = &cobra.Command{
 		username, err := prompt.Run()
 		if err != nil {
 			fmt.Printf("Prompt failed: %v\n", err)
-			return
 		}
 
 		prompt = promptui.Prompt{
@@ -70,13 +77,13 @@ var loginCmd = &cobra.Command{
 		password, err := prompt.Run()
 		if err != nil {
 			fmt.Printf("Prompt failed: %v\n", err)
-			return
+
 		}
 
 		contextInfo, err := SbLogin(username, password, tokenLoginUrl)
 		if err != nil {
 			fmt.Printf("Login failed: %v\n", err)
-			return
+
 		}
 
 		// Determine the server type (OSS or SaaS)
@@ -87,7 +94,7 @@ var loginCmd = &cobra.Command{
 		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Printf("Server check failed: %v\n", err)
-			return
+			
 		}
 		defer resp.Body.Close()
 
@@ -104,14 +111,14 @@ var loginCmd = &cobra.Command{
 		configFile := viper.ConfigFileUsed()
 		configData, err := ioutil.ReadFile(configFile)
 		if err != nil {
-			fmt.Printf("Failed to read config file: %v\n", err)
-			return
+			 fmt.Printf("Failed to read config file: %v\n", err)
+			
 		}
 
 		var cfg Config
 		if err := json.Unmarshal(configData, &cfg); err != nil {
 			fmt.Printf("Failed to parse config file: %v\n", err)
-			return
+			
 		}
 
 		if cfg.Contexts == nil {
@@ -143,17 +150,18 @@ var loginCmd = &cobra.Command{
 		updatedConfig, err := json.MarshalIndent(cfg, "", "  ")
 		if err != nil {
 			fmt.Printf("Failed to marshal config: %v\n", err)
-			return
+			
 		}
 
 		if err := ioutil.WriteFile(configFile, updatedConfig, 0644); err != nil {
 			fmt.Printf("Failed to write config file: %v\n", err)
-			return
+		
 		}
 
 		fmt.Println("Login successful")
-	},
-}
+        os.Exit(0)
+        return nil
+	}
 
 // SbLogin function to authenticate and return ContextInfo
 func SbLogin(username, password, sbUrl string) (ContextInfo, error) {
@@ -194,10 +202,12 @@ func SbLogin(username, password, sbUrl string) (ContextInfo, error) {
 		return ContextInfo{
 			Token: loginResponse.Token,
 		}, nil
+
 	}
 
 	// Handle non-200 status codes
 	return ContextInfo{}, fmt.Errorf("login failed with status: %s", resp.Status)
+
 }
 
 func init() {
