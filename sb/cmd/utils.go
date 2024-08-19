@@ -52,27 +52,26 @@ func makeAPICall(endpointUrl string, method string, jsonData []byte) (string, er
 	return string(body), nil
 }
 
-
-func getContext() (string,string,string, error){
+func getContext() (string, string, string, error) {
 	currentContext := viper.GetString("current-context")
 	if currentContext == "" {
-		return "","","",fmt.Errorf("no current context set")
+		return "", "", "", fmt.Errorf("no current context set")
 	}
 
 	// Get context information
 	contexts := viper.GetStringMap("contexts")
 	contextInfo, ok := contexts[currentContext].(map[string]interface{})
 	if !ok {
-		return "","","", fmt.Errorf("context %s not found", currentContext)
+		return "", "", "", fmt.Errorf("context %s not found", currentContext)
 	}
 
 	sbUrl, _ := contextInfo["endpoint"].(string)
 	token, _ := contextInfo["token"].(string)
-	server,_:=contextInfo["server"].(string)
+	server, _ := contextInfo["server"].(string)
 	if sbUrl == "" || token == "" {
-		return "","","", fmt.Errorf("endpoint or token not found for the current context")
+		return "", "", "", fmt.Errorf("endpoint or token not found for the current context")
 	}
-	return sbUrl ,token,server,nil
+	return sbUrl, token, server, nil
 
 }
 

@@ -27,134 +27,133 @@ type Config struct {
 }
 
 var loginCmd = &cobra.Command{
-    Use:   "login",
-    Short: "Log in to the Shapeblock server",
-    Run: func(cmd *cobra.Command, args []string) {
-        endpoint := viper.GetString("endpoint")
+	Use:   "login",
+	Short: "Log in to the Shapeblock server",
+	Run: func(cmd *cobra.Command, args []string) {
+		endpoint := viper.GetString("endpoint")
 
-        prompt := promptui.Prompt{
-            Label:   "Shapeblock server",
-            Default: endpoint,
-        }
+		prompt := promptui.Prompt{
+			Label:   "Shapeblock server",
+			Default: endpoint,
+		}
 
-        url, err := prompt.Run()
-        if err != nil {
-            fmt.Printf("Prompt failed: %v\n", err)
-            return
-        }
+		url, err := prompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed: %v\n", err)
+			return
+		}
 
-        var sbUrl string
-        if strings.HasPrefix(url, "http") {
-            sbUrl = url
-        } else {
-            sbUrl = fmt.Sprintf("https://%s", url)
-        }
+		var sbUrl string
+		if strings.HasPrefix(url, "http") {
+			sbUrl = url
+		} else {
+			sbUrl = fmt.Sprintf("https://%s", url)
+		}
 
-        tokenLoginUrl := fmt.Sprintf("%s/api/auth/token/", sbUrl)
+		tokenLoginUrl := fmt.Sprintf("%s/api/auth/token/", sbUrl)
 
-        prompt = promptui.Prompt{
-            Label: "Email (enter your username if you're using the open source version)",
-        }
+		prompt = promptui.Prompt{
+			Label: "Email (enter your username if you're using the open source version)",
+		}
 
-        username, err := prompt.Run()
-        if err != nil {
-            fmt.Printf("Prompt failed: %v\n", err)
-            return
-        }
+		username, err := prompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed: %v\n", err)
+			return
+		}
 
-        prompt = promptui.Prompt{
-            Label: "Password",
-            Mask:  '*',
-        }
+		prompt = promptui.Prompt{
+			Label: "Password",
+			Mask:  '*',
+		}
 
-        password, err := prompt.Run()
-        if err != nil {
-            fmt.Printf("Prompt failed: %v\n", err)
-            return
-        }
+		password, err := prompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed: %v\n", err)
+			return
+		}
 
-        contextInfo, err := SbLogin(username, password, tokenLoginUrl)
-        if err != nil {
-            fmt.Printf("Login failed: %v\n", err)
-            return
-        }
+		contextInfo, err := SbLogin(username, password, tokenLoginUrl)
+		if err != nil {
+			fmt.Printf("Login failed: %v\n", err)
+			return
+		}
 
-        // Determine the server type (OSS or SaaS)
-        req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/auth/registration/", sbUrl), nil)
-        req.Header.Add("Content-Type", "application/json")
+		// Determine the server type (OSS or SaaS)
+		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/auth/registration/", sbUrl), nil)
+		req.Header.Add("Content-Type", "application/json")
 
-        client := &http.Client{}
-        resp, err := client.Do(req)
-        if err != nil {
-            fmt.Printf("Server check failed: %v\n", err)
-            return
-        }
-        defer resp.Body.Close()
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Printf("Server check failed: %v\n", err)
+			return
+		}
+		defer resp.Body.Close()
 
-        serverType := "oss"
-        if resp.StatusCode != http.StatusNotFound {
-            serverType = "saas"
-        }
+		serverType := "oss"
+		if resp.StatusCode != http.StatusNotFound {
+			serverType = "saas"
+		}
 
-        contextInfo.Server = serverType
-        contextInfo.Endpoint = sbUrl
-        contextInfo.Timestamp = time.Now().Format(time.RFC3339)
+		contextInfo.Server = serverType
+		contextInfo.Endpoint = sbUrl
+		contextInfo.Timestamp = time.Now().Format(time.RFC3339)
 
-        // Load the existing configuration manually
-        configFile := viper.ConfigFileUsed()
-        configData, err := ioutil.ReadFile(configFile)
-        if err != nil {
-            fmt.Printf("Failed to read config file: %v\n", err)
-            return
-        }
+		// Load the existing configuration manually
+		configFile := viper.ConfigFileUsed()
+		configData, err := ioutil.ReadFile(configFile)
+		if err != nil {
+			fmt.Printf("Failed to read config file: %v\n", err)
+			return
+		}
 
-        var cfg Config
-        if err := json.Unmarshal(configData, &cfg); err != nil {
-            fmt.Printf("Failed to parse config file: %v\n", err)
-            return
-        }
+		var cfg Config
+		if err := json.Unmarshal(configData, &cfg); err != nil {
+			fmt.Printf("Failed to parse config file: %v\n", err)
+			return
+		}
 
-        if cfg.Contexts == nil {
-            cfg.Contexts = make(map[string]ContextInfo)
-        }
+		if cfg.Contexts == nil {
+			cfg.Contexts = make(map[string]ContextInfo)
+		}
 
-        // Update the existing context with new values or add a new context
-        existingContext, exists := cfg.Contexts[username]
-        if exists {
-            if contextInfo.Endpoint != "" {
-                existingContext.Endpoint = contextInfo.Endpoint
-            }
-            if contextInfo.Server != "" {
-                existingContext.Server = contextInfo.Server
-            }
-            if contextInfo.Token != "" {
-                existingContext.Token = contextInfo.Token
-            }
-            existingContext.Timestamp = contextInfo.Timestamp
-            cfg.Contexts[username] = existingContext
-        } else {
-            cfg.Contexts[username] = contextInfo
-        }
+		// Update the existing context with new values or add a new context
+		existingContext, exists := cfg.Contexts[sbUrl]
+		if exists {
+			if contextInfo.Endpoint != "" {
+				existingContext.Endpoint = contextInfo.Endpoint
+			}
+			if contextInfo.Server != "" {
+				existingContext.Server = contextInfo.Server
+			}
+			if contextInfo.Token != "" {
+				existingContext.Token = contextInfo.Token
+			}
+			existingContext.Timestamp = contextInfo.Timestamp
+			cfg.Contexts[sbUrl] = existingContext
+		} else {
+			cfg.Contexts[sbUrl] = contextInfo
+		}
 
-        // Set the current context
-        cfg.CurrentContext = username
+		// Set the current context
+		cfg.CurrentContext = sbUrl
 
-        // Write the updated configuration back to the file
-        updatedConfig, err := json.MarshalIndent(cfg, "", "  ")
-        if err != nil {
-            fmt.Printf("Failed to marshal config: %v\n", err)
-            return
-        }
+		// Write the updated configuration back to the file
+		updatedConfig, err := json.MarshalIndent(cfg, "", "  ")
+		if err != nil {
+			fmt.Printf("Failed to marshal config: %v\n", err)
+			return
+		}
 
-        if err := ioutil.WriteFile(configFile, updatedConfig, 0644); err != nil {
-            fmt.Printf("Failed to write config file: %v\n", err)
-            return
-        }
+		if err := ioutil.WriteFile(configFile, updatedConfig, 0644); err != nil {
+			fmt.Printf("Failed to write config file: %v\n", err)
+			return
+		}
 
-        fmt.Println("Login successful")
-    },
+		fmt.Println("Login successful")
+	},
 }
-
 
 // SbLogin function to authenticate and return ContextInfo
 func SbLogin(username, password, sbUrl string) (ContextInfo, error) {
