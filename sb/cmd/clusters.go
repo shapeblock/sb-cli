@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 	"strings"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -91,7 +92,7 @@ func selectCluster(clusters []ClusterDetail) ClusterDetail {
 
 	return clusters[index]
 }
-func checkClusterStatus(clusterUUID, sbUrl string) error {
+func checkClusterStatus(clusterUUID, sbUrl string,timeout,interval time.Duration) error {
 	url := fmt.Sprintf("%s/api/clusters/status/%s/", sbUrl, clusterUUID)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -100,6 +101,7 @@ func checkClusterStatus(clusterUUID, sbUrl string) error {
 	}
 	// Send the request
 	client := &http.Client{}
+	startTime := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
@@ -125,8 +127,12 @@ func checkClusterStatus(clusterUUID, sbUrl string) error {
 	if status, ok := result["status"]; ok && status == "ready" {
 		return nil
 	}
+	if time.Since(startTime) > timeout {
+		return fmt.Errorf("timeout waiting for cluster to become ready")
+	}
 
-	return fmt.Errorf("wait!: %s", result["status"])
+	time.Sleep(interval)
+	return fmt.Errorf("Wait!")
 }
 
 var clustersCmd = &cobra.Command{
@@ -142,6 +148,7 @@ var scaleClusterCmd = &cobra.Command{
 	Use:   "scale",
 	Short: "Scale a cluster up or down",
 }
+
 
 func init() {
 	rootCmd.AddCommand(clustersCmd)

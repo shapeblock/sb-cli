@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
+   "time"
 	"github.com/spf13/cobra"
 )
 
@@ -53,8 +53,9 @@ func createProject(cmd *cobra.Command, args []string) {
 		clusterUUID := cluster.UUID
 
 		// Checking cluster status before creating project
-
-		if err := checkClusterStatus(clusterUUID, sbUrl); err != nil {
+		timeout := 5 * time.Minute
+		interval := 5 * time.Second
+		if err := checkClusterStatus(clusterUUID, sbUrl,timeout,interval); err != nil {
 			fmt.Fprintf(os.Stderr, "Cluster is not ready: %v\n", err)
 			return
 		}
