@@ -8,10 +8,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
-      "log"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 type Node struct {
@@ -66,23 +64,7 @@ func selectProvider(providers []Provider) Provider {
 
 func execute(cmd *cobra.Command, args []string) {
 	cluster := Cluster{}
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		log.Printf("no current context set")
-	}
-
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-	 log.Printf("context %s not found", currentContext)
-	}
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-
-	if sbUrl == "" || token == "" {
-		 fmt.Errorf("endpoint or token not found for the current context")
-	}
-
+	sbUrl, token, _,err := getContext()
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -128,19 +110,6 @@ func execute(cmd *cobra.Command, args []string) {
 		fmt.Println("Error marshaling JSON:", err)
 		return
 	}
-
-	// API call
-	/*sbUrl = viper.GetString("endpoint")
-	if sbUrl == "" {
-		fmt.Println("User not logged in")
-		return
-	}
-
-	token := viper.GetString("token")
-	if token == "" {
-		fmt.Println("User not logged in")
-		return
-	}*/
 
 	fullUrl := sbUrl + "/api/clusters/"
 
@@ -201,24 +170,7 @@ func prompt(label string, required bool) string {
 }
 
 func fetchAndSelectRegion(cloud string) string {
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		fmt.Errorf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		fmt.Errorf("context %s not found", currentContext)
-	}
-
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		fmt.Errorf("endpoint or token not found for the current context")
-	}
-
+	sbUrl, _,_, err := getContext()
 	url := fmt.Sprintf("%s/api/providers/region-choices/%s/", sbUrl, cloud)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -287,24 +239,7 @@ func selectNodeSize(sizes [][]string) string {
 }
 
 func fetchNodeSizes(cloud string) [][]string {
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		log.Printf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		log.Printf("context %s not found", currentContext)
-	}
-
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		fmt.Errorf("endpoint or token not found for the current context")
-	}
-
+	sbUrl, _, _,err := getContext()
 	url := fmt.Sprintf("%s/api/providers/size-choices/%s/", sbUrl, cloud)
 	resp, err := http.Get(url)
 	if err != nil {

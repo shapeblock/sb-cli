@@ -10,7 +10,6 @@ import (
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 type Service struct {
@@ -37,23 +36,8 @@ type ServiceAttach struct {
 
 func fetchServices() ([]Service, error) {
 
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		fmt.Errorf("no current context set")
-	}
+	sbUrl, token, _, err := getContext()
 
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		fmt.Errorf("context %s not found", currentContext)
-	}
-
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		fmt.Errorf("endpoint or token not found for the current context")
-	}
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/services/", sbUrl), nil)
 

@@ -9,11 +9,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 	"strings"
-
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	//"k8s.io/client-go/tools/auth"
 )
 
@@ -37,25 +36,7 @@ type ClusterNode struct {
 
 func fetchClusters() ([]ClusterDetail, error) {
 
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		return nil, fmt.Errorf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("context %s not found", currentContext)
-	}
-
-	// Extract endpoint and token
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		return nil, fmt.Errorf("endpoint or token not found for the current context")
-	}
-
+	sbUrl, token, _,err := getContext()
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
 	//log.Printf("Token: %s", token)
 	req.Header.Add("Content-Type", "application/json")
@@ -111,7 +92,7 @@ func selectCluster(clusters []ClusterDetail) ClusterDetail {
 
 	return clusters[index]
 }
-func checkClusterStatus(clusterUUID, sbUrl string) error {
+func checkClusterStatus(clusterUUID, sbUrl string,timeout,interval time.Duration) error {
 	url := fmt.Sprintf("%s/api/clusters/status/%s/", sbUrl, clusterUUID)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -120,15 +101,16 @@ func checkClusterStatus(clusterUUID, sbUrl string) error {
 	}
 	// Send the request
 	client := &http.Client{}
+	startTime := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	/*if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}*/
+	}
 
 	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
@@ -145,8 +127,12 @@ func checkClusterStatus(clusterUUID, sbUrl string) error {
 	if status, ok := result["status"]; ok && status == "ready" {
 		return nil
 	}
+	if time.Since(startTime) > timeout {
+		return fmt.Errorf("timeout waiting for cluster to become ready")
+	}
 
-	return fmt.Errorf("wait!: %s", result["status"])
+	time.Sleep(interval)
+	return fmt.Errorf("Wait!")
 }
 
 var clustersCmd = &cobra.Command{
@@ -162,6 +148,7 @@ var scaleClusterCmd = &cobra.Command{
 	Use:   "scale",
 	Short: "Scale a cluster up or down",
 }
+
 
 func init() {
 	rootCmd.AddCommand(clustersCmd)

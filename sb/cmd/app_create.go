@@ -61,23 +61,7 @@ func appCreate(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	currentContext := viper.GetString("current-context")
-	if currentContext == "" {
-		fmt.Errorf("no current context set")
-	}
-
-	// Get context information
-	contexts := viper.GetStringMap("contexts")
-	contextInfo, ok := contexts[currentContext].(map[string]interface{})
-	if !ok {
-		fmt.Errorf("context %s not found", currentContext)
-	}
-
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	if sbUrl == "" || token == "" {
-		fmt.Errorf("endpoint or token not found for the current context")
-	}
+	sbUrl, token, _,err := getContext()
 
 	fullUrl := sbUrl + "/api/apps/"
 
@@ -95,12 +79,6 @@ func appCreate(cmd *cobra.Command, args []string) {
 	}
 
 	defer resp.Body.Close()
-	/*bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return 
-	}
-	fmt.Println("Response Body:", string(bodyBytes))*/
-
 	if resp.StatusCode == http.StatusCreated {
 		fmt.Println("New app created successfully.")
 	} else if resp.StatusCode == http.StatusUnauthorized {
