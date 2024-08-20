@@ -21,21 +21,21 @@ func appSecretList(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	app := selectApp(apps)
+
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleLight)
-	t.AppendHeader(table.Row{"App Name","Key"})
-	
-	for _, app := range apps {
-		sec, err := fetchSecret(app.UUID)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error fetching volumes for app %s: %v\n", app.Name, err)
-			continue
-		}
-		for _, secret := range sec {
-			t.AppendRow([]interface{}{app.Name,secret.Key})
-			t.AppendSeparator()
-		}
+	t.AppendHeader(table.Row{"Key"})
+
+	secrets, err := fetchSecret(app.UUID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching volumes for app %s: %v\n", app.Name, err)
+		return
+	}
+	for _, secret := range secrets {
+		t.AppendRow([]interface{}{secret.Key})
+		t.AppendSeparator()
 	}
 	t.AppendSeparator()
 	t.Render()
