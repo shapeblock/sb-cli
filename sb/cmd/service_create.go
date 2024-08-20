@@ -17,6 +17,12 @@ type ServiceCreate struct {
 	Type    string `json:"type"`
 }
 
+type ServiceRef struct {
+	Name string `json:"name"`
+	UUID string `json:"uuid"`
+	Type string `json:"type"`
+}
+
 var svcCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a new service",

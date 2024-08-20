@@ -595,7 +595,7 @@ func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, e
 	return BuildselectedVars, nil
 }
 
-func fetchInitProcesses(appUUID string) ([]InitProcess, error) {
+func fetchInitProcesses(appUUID string) ([]InitProcessRead, error) {
 	sbUrl, token, _, err := getContext()
 	if err != nil {
 		return nil, err
@@ -620,7 +620,7 @@ func fetchInitProcesses(appUUID string) ([]InitProcess, error) {
 		return nil, fmt.Errorf("failed to fetch init processes, status code: %d", resp.StatusCode)
 	}
 
-	var initProcesses []InitProcess
+	var initProcesses []InitProcessRead
 	err = json.NewDecoder(resp.Body).Decode(&initProcesses)
 	if err != nil {
 		return nil, err
@@ -629,7 +629,7 @@ func fetchInitProcesses(appUUID string) ([]InitProcess, error) {
 	return initProcesses, nil
 }
 
-func selectInitProcess(initProcesses []InitProcess) InitProcess {
+func selectInitProcess(initProcesses []InitProcessRead) InitProcessRead {
 	templates := &promptui.SelectTemplates{
 		Label:    "{{ . }}?",
 		Active:   "\U0001F449 {{ .Key | cyan }}",
@@ -655,7 +655,7 @@ func selectInitProcess(initProcesses []InitProcess) InitProcess {
 	index, _, err := prompt.Run()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
-		return InitProcess{}
+		return InitProcessRead{}
 	}
 
 	return initProcesses[index]

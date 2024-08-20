@@ -12,12 +12,15 @@ import (
 
 type AppInfo struct {
 	Name          string               `json:"name"`
+	Repo          string               `json:"repo"`
+	Ref           string               `json:"ref"`
 	UUID          string               `json:"uuid"`
+	Stack         string               `json:"stack"`
 	EnvVars       []EnvVar             `json:"env_vars"`
 	Volumes       []Volume             `json:"volumes"`
 	BuildVars     []BuildVar           `json:"build_vars"`
 	SecretVars    []SecretVar          `json:"secrets"`
-	Services      []ServiceCreate      `json:"services"`
+	Services      []ServiceRef         `json:"services"`
 	CustomDomains []CustomDomainDetail `json:"custom_domains"`
 	Project       ProjectDetail        `json:"project"`
 }
@@ -78,6 +81,9 @@ func appInfo(cmd *cobra.Command, args []string) {
 	basicInfo.AppendRows([]table.Row{
 		{fmt.Sprintf("Name: %s", appInfo.Name)},
 		{fmt.Sprintf("ID: %s", appInfo.UUID)},
+		{fmt.Sprintf("Repo: %s", appInfo.Repo)},
+		{fmt.Sprintf("Ref: %s", appInfo.Ref)},
+		{fmt.Sprintf("Stack: %s", appInfo.Stack)},
 	})
 	basicInfo.Render()
 	println()
@@ -158,7 +164,7 @@ func appInfo(cmd *cobra.Command, args []string) {
 		volumes.AppendSeparator()
 		for _, volume := range appInfo.Volumes {
 			volumes.AppendRows([]table.Row{
-				{volume.Name, volume.MountPath, volume.Size},
+				{volume.Name, volume.MountPath, fmt.Sprintf("%d GiB", volume.Size)},
 			})
 		}
 		volumes.Render()
@@ -178,6 +184,22 @@ func appInfo(cmd *cobra.Command, args []string) {
 			})
 		}
 		domains.Render()
+		println()
+	}
+
+	if len(appInfo.Services) != 0 {
+		// Services table
+		services := table.NewWriter()
+		services.SetStyle(table.StyleBold)
+		services.SetOutputMirror(os.Stdout)
+		services.AppendHeader(table.Row{"Name", "Type"})
+		services.AppendSeparator()
+		for _, service := range appInfo.Services {
+			services.AppendRows([]table.Row{
+				{service.Name, service.Type},
+			})
+		}
+		services.Render()
 		println()
 	}
 }

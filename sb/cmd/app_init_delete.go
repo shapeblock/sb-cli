@@ -1,15 +1,16 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
-	"bytes"
-	"encoding/json"
+
 	"github.com/spf13/cobra"
 )
 
-type InitProcessDeletePayload struct{
+type InitProcessDeletePayload struct {
 	Delete []string `json:"delete"`
 }
 
@@ -21,7 +22,7 @@ var deleteInitCmd = &cobra.Command{
 
 func appInitDelete(cmd *cobra.Command, args []string) {
 
-	sbUrl, token,_, err := getContext()
+	sbUrl, token, _, err := getContext()
 
 	apps, err := fetchApps()
 	if err != nil {
@@ -37,15 +38,7 @@ func appInitDelete(cmd *cobra.Command, args []string) {
 	}
 
 	selectedInitProcess := selectInitProcess(initProcesses)
-	if selectedInitProcess.ID == "" {
-		fmt.Println("No init process selected.")
-		return
-	}
 
-	if err != nil {
-		fmt.Println("error marshaling JSON:", err)
-		return
-	}
 	payload := InitProcessDeletePayload{
 		Delete: []string{selectedInitProcess.Key},
 	}
@@ -53,7 +46,7 @@ func appInitDelete(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Println("error marshaling JSON:", err)
 		return
-	}	
+	}
 
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/init-process/", sbUrl, app.UUID)
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
@@ -87,6 +80,6 @@ func appInitDelete(cmd *cobra.Command, args []string) {
 	}
 }
 
-func init(){
+func init() {
 	appInitCmd.AddCommand(deleteInitCmd)
 }
