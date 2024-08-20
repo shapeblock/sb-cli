@@ -595,6 +595,140 @@ func selectBuildVars(selectedPos int, allVars []*BuildSelect) ([]*BuildSelect, e
 	return BuildselectedVars, nil
 }
 
+func fetchInitProcesses(appUUID string) ([]InitProcess, error) {
+	sbUrl, token, _, err := getContext()
+	if err != nil {
+		return nil, err
+	}
+
+	fullUrl := fmt.Sprintf("%s/api/apps/%s/init-process/", sbUrl, appUUID)
+	req, err := http.NewRequest("GET", fullUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch init processes, status code: %d", resp.StatusCode)
+	}
+
+	var initProcesses []InitProcess
+	err = json.NewDecoder(resp.Body).Decode(&initProcesses)
+	if err != nil {
+		return nil, err
+	}
+
+	return initProcesses, nil
+}
+
+func selectInitProcess(initProcesses []InitProcess) InitProcess {
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "\U0001F449 {{ .Key | cyan }}",
+		Inactive: "  {{ .Key | cyan }}",
+		Selected: "\U0001F3C1 {{ .Key | red | cyan }}",
+	}
+
+	searcher := func(input string, index int) bool {
+		initProcess := initProcesses[index]
+		name := strings.Replace(strings.ToLower(initProcess.Key), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input)
+	}
+
+	prompt := promptui.Select{
+		Label:     "Select Init Process to Delete",
+		Items:     initProcesses,
+		Templates: templates,
+		Searcher:  searcher,
+	}
+
+	index, _, err := prompt.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
+		return InitProcess{}
+	}
+
+	return initProcesses[index]
+}
+
+func fetchWorkerProcesses(appUUID string) ([]WorkerProcess, error) {
+	sbUrl, token, _, err := getContext()
+	if err != nil {
+		return nil, err
+	}
+
+	fullUrl := fmt.Sprintf("%s/api/apps/%s/worker/", sbUrl, appUUID)
+	req, err := http.NewRequest("GET", fullUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch init processes, status code: %d", resp.StatusCode)
+	}
+
+	var workerProcesses []WorkerProcess
+	err = json.NewDecoder(resp.Body).Decode(&workerProcesses)
+	if err != nil {
+		return nil, err
+	}
+
+	return workerProcesses, nil
+}
+
+func selectWorkerProcess(workerProcesses []WorkerProcess) WorkerProcess {
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "\U0001F449 {{ .Key | cyan }}",
+		Inactive: "  {{ .Key | cyan }}",
+		Selected: "\U0001F3C1 {{ .Key | red | cyan }}",
+	}
+
+	searcher := func(input string, index int) bool {
+		workerProcess := workerProcesses[index]
+		name := strings.Replace(strings.ToLower(workerProcess.Key), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input)
+	}
+
+	prompt := promptui.Select{
+		Label:     "Select Worker Process to Delete",
+		Items:     workerProcesses,
+		Templates: templates,
+		Searcher:  searcher,
+	}
+
+	index, _, err := prompt.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
+		return WorkerProcess{}
+	}
+
+	return workerProcesses[index]
+}
+
+
+
 var appsCmd = &cobra.Command{
 	Use:     "apps",
 	Aliases: []string{"app"},
@@ -655,6 +789,22 @@ var appDomainCmd = &cobra.Command{
 	},
 }
 
+var appInitCmd = &cobra.Command{
+	Use:   "init",
+	Short: "Manage Init Processs",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Error: must also specify an action like create or list or delete.")
+	},
+}
+
+var appWorkerCmd = &cobra.Command{
+	Use:   "worker",
+	Short: "Manage Worker Processs",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Error: must also specify an action like create or list or delete.")
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(appsCmd)
 	appsCmd.AddCommand(appEnvVarCmd)
@@ -663,4 +813,6 @@ func init() {
 	appsCmd.AddCommand(appSecretCmd)
 	appsCmd.AddCommand(appBuiltEnvCmd)
 	appsCmd.AddCommand(appDomainCmd)
+	appsCmd.AddCommand(appInitCmd)
+	appsCmd.AddCommand(appWorkerCmd)
 }

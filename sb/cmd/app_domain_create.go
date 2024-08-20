@@ -6,7 +6,6 @@ import (
     "fmt"
     "net/http"
     "os"
-    "io"
     "github.com/spf13/cobra"
 )
 
@@ -68,11 +67,11 @@ func createDomain(cmf *cobra.Command, args []string) {
 
     defer resp.Body.Close() 
 
-    bodyBytes, err := io.ReadAll(resp.Body)
+   /* bodyBytes, err := io.ReadAll(resp.Body)
     if err != nil {
         return 
     }
-    fmt.Println("Response Body:", string(bodyBytes))
+    fmt.Println("Response Body:", string(bodyBytes))*/
 
     // Check the status code of the response
     if resp.StatusCode == http.StatusOK {
