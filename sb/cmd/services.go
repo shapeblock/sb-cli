@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
 	//"io"
 
 	"github.com/manifoldco/promptui"
@@ -13,19 +14,19 @@ import (
 )
 
 type Service struct {
-	UUID    string `json:"uuid"`
-	Name    string `json:"name"`
-	Stack   string `json:"stack"`
-	Repo    string `json:"repo"`
-	Ref     string `json:"ref"`
-	Subpath string `json:"sub_path"`
-	User    int    `json:"user"`
+	UUID    string      `json:"uuid"`
+	Name    string      `json:"name"`
+	Stack   string      `json:"stack"`
+	Repo    string      `json:"repo"`
+	Ref     string      `json:"ref"`
+	Subpath string      `json:"sub_path"`
+	User    int         `json:"user"`
 	Project projectInfo `json:"project"`
-	Type string `json:"type"`
+	Type    string      `json:"type"`
 }
 type projectInfo struct {
-	Name string `json:"Name"`
-	UUID string `json:"UUID"`
+	Name        string `json:"Name"`
+	UUID        string `json:"UUID"`
 	DisplayName string `json:"display_name"`
 }
 
@@ -38,7 +39,6 @@ func fetchServices() ([]Service, error) {
 
 	sbUrl, token, _, err := getContext()
 
-
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/services/", sbUrl), nil)
 
 	req.Header.Add("Content-Type", "application/json")
@@ -50,13 +50,6 @@ func fetchServices() ([]Service, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
-    /*bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("Response Body:", string(bodyBytes))
-*/
 
 	var services []Service
 	if err := json.NewDecoder(resp.Body).Decode(&services); err != nil {
@@ -103,7 +96,7 @@ var servicesCmd = &cobra.Command{
 	Aliases: []string{"service", "svc"},
 	Short:   "Manage apps Service",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Error: must also specify an action like list or create.")
+		cmd.Help()
 	},
 }
 

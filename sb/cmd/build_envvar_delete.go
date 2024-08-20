@@ -1,6 +1,5 @@
 /*
 Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -10,11 +9,14 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+
 	"github.com/spf13/cobra"
 )
+
 type BuildDeletePayload struct {
 	BuildVars []string `json:"delete"`
 }
+
 func GetbuiltKeys(BuildVars []*BuildSelect) []string {
 	var vars []string
 	for _, BuildVar := range BuildVars {
@@ -27,10 +29,10 @@ func GetbuiltKeys(BuildVars []*BuildSelect) []string {
 var buildEnvvarDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete build  variables",
-	Run: buildDelete,
+	Run:   buildDelete,
 }
 
-func buildDelete(cmd *cobra.Command,args [] string){
+func buildDelete(cmd *cobra.Command, args []string) {
 	apps, err := fetchApps()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching apps: %v\n", err)
@@ -44,7 +46,7 @@ func buildDelete(cmd *cobra.Command,args [] string){
 		fmt.Fprintf(os.Stderr, "Error fetching app detail: %v\n", err)
 		return
 	}
-BuildVars := ConvertBuildToSelect(appDetail.BuildVars)
+	BuildVars := ConvertBuildToSelect(appDetail.BuildVars)
 	BuildVars, err = selectBuildVars(0, BuildVars)
 	if err != nil {
 		fmt.Printf("Selection failed %v\n", err)
@@ -54,7 +56,7 @@ BuildVars := ConvertBuildToSelect(appDetail.BuildVars)
 		fmt.Println("No build vars deleted")
 		return
 	}
-    
+
 	payload := BuildDeletePayload{BuildVars: GetbuiltKeys(BuildVars)}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
@@ -63,7 +65,7 @@ BuildVars := ConvertBuildToSelect(appDetail.BuildVars)
 	}
 
 	// API call
-	sbUrl, token, _,err := getContext()
+	sbUrl, token, _, err := getContext()
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/build-vars/", sbUrl, appDetail.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
@@ -100,14 +102,4 @@ BuildVars := ConvertBuildToSelect(appDetail.BuildVars)
 
 func init() {
 	appBuiltEnvCmd.AddCommand(buildEnvvarDeleteCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// buildEnvvarDeleteCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// buildEnvvarDeleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

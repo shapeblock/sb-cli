@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +19,7 @@ type Project struct {
 }
 
 func fetchProjects() ([]Project, error) {
-    sbUrl, token, _, err := getContext()
+	sbUrl, token, _, err := getContext()
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/projects/", sbUrl), nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
@@ -45,12 +46,13 @@ func fetchProjects() ([]Project, error) {
 	//fmt.Println("Fetched Projects:", projects)
 	return projects, nil
 }
+
 var projectsCmd = &cobra.Command{
 	Use:     "projects",
 	Aliases: []string{"project", "proj"},
 	Short:   "Projects are loaded namespaces within a cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Error: must also specify an action like list or add.")
+		cmd.Help()
 	},
 }
 

@@ -9,8 +9,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"time"
 	"strings"
+	"time"
+
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	//"k8s.io/client-go/tools/auth"
@@ -36,7 +37,7 @@ type ClusterNode struct {
 
 func fetchClusters() ([]ClusterDetail, error) {
 
-	sbUrl, token, _,err := getContext()
+	sbUrl, token, _, err := getContext()
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
 	//log.Printf("Token: %s", token)
 	req.Header.Add("Content-Type", "application/json")
@@ -92,7 +93,7 @@ func selectCluster(clusters []ClusterDetail) ClusterDetail {
 
 	return clusters[index]
 }
-func checkClusterStatus(clusterUUID, sbUrl string,timeout,interval time.Duration) error {
+func checkClusterStatus(clusterUUID, sbUrl string, timeout, interval time.Duration) error {
 	url := fmt.Sprintf("%s/api/clusters/status/%s/", sbUrl, clusterUUID)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -140,7 +141,7 @@ var clustersCmd = &cobra.Command{
 	Aliases: []string{"cluster"},
 	Short:   "Manage clusters",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Error: must also specify an action like list or add.")
+		cmd.Help()
 	},
 }
 
@@ -148,7 +149,6 @@ var scaleClusterCmd = &cobra.Command{
 	Use:   "scale",
 	Short: "Scale a cluster up or down",
 }
-
 
 func init() {
 	rootCmd.AddCommand(clustersCmd)

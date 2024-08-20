@@ -1,30 +1,32 @@
 package cmd
+
 import (
-	"fmt"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
 )
+
 var buildEnvvarUpdateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update build variables",
-	Run: buildEnvVarUpdate,
+	Run:   buildEnvVarUpdate,
 }
 
-func buildEnvVarUpdate(cmd *cobra.Command,args [] string){
+func buildEnvVarUpdate(cmd *cobra.Command, args []string) {
 	apps, err := fetchApps()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error fetching apps: %v\n", err)
-			return
-		}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching apps: %v\n", err)
+		return
+	}
 
-		app := selectApp(apps)
+	app := selectApp(apps)
 
-		appDetail, err := fetchAppDetail(app.UUID)
-	    if err != nil {
+	appDetail, err := fetchAppDetail(app.UUID)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching app detail: %v\n", err)
 		return
 	}
@@ -77,14 +79,4 @@ func buildEnvVarUpdate(cmd *cobra.Command,args [] string){
 }
 func init() {
 	appBuiltEnvCmd.AddCommand(buildEnvvarUpdateCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// buildEnvvarUpdateCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// buildEnvvarUpdateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

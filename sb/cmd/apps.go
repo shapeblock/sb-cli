@@ -727,14 +727,12 @@ func selectWorkerProcess(workerProcesses []WorkerProcess) WorkerProcess {
 	return workerProcesses[index]
 }
 
-
-
 var appsCmd = &cobra.Command{
 	Use:     "apps",
 	Aliases: []string{"app"},
 	Short:   "Manage apps",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Error: must also specify an action like list or add.")
+		cmd.Help()
 	},
 }
 
@@ -742,7 +740,7 @@ var appEnvVarCmd = &cobra.Command{
 	Use:   "env",
 	Short: "Manage app env vars.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Error: must also specify an action like add or delete.")
+		cmd.Help()
 	},
 }
 
@@ -751,7 +749,7 @@ var appVolumeCmd = &cobra.Command{
 	Aliases: []string{"volume"},
 	Short:   "Manage app volumes.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Error: must also specify an action like add or delete.")
+		cmd.Help()
 	},
 }
 
@@ -760,7 +758,7 @@ var deployCmd = &cobra.Command{
 	Aliases: []string{"deploys"},
 	Short:   "Manage app deployment.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Error: must also specify an action like create or list.")
+		cmd.Help()
 	},
 }
 
@@ -769,7 +767,7 @@ var appSecretCmd = &cobra.Command{
 	Aliases: []string{"secrets"},
 	Short:   "Manage Secrets",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Error: must also specify an action like create or list or delete.")
+		cmd.Help()
 	},
 }
 
@@ -777,7 +775,7 @@ var appBuiltEnvCmd = &cobra.Command{
 	Use:   "build-env",
 	Short: "Manage Build Env",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Error: must also specify an action like create or list or delete.")
+		cmd.Help()
 	},
 }
 
@@ -785,7 +783,7 @@ var appDomainCmd = &cobra.Command{
 	Use:   "domain",
 	Short: "Manage Domains",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Error: must also specify an action like create or list or delete.")
+		cmd.Help()
 	},
 }
 
@@ -793,7 +791,7 @@ var appInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Manage Init Processs",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Error: must also specify an action like create or list or delete.")
+		cmd.Help()
 	},
 }
 
@@ -801,7 +799,7 @@ var appWorkerCmd = &cobra.Command{
 	Use:   "worker",
 	Short: "Manage Worker Processs",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Error: must also specify an action like create or list or delete.")
+		cmd.Help()
 	},
 }
 

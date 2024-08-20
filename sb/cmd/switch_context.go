@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -14,7 +15,7 @@ var switchCmd = &cobra.Command{
 	Short: "Switch between contexts",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Load existing configuration file
-		
+
 		configFile := viper.ConfigFileUsed()
 		if configFile == "" {
 			fmt.Println("No config file found")
