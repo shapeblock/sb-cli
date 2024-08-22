@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
-	"io"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"

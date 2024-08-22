@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strconv"
-	"encoding/json"
-	"io/ioutil"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/viper"
@@ -53,76 +53,100 @@ func makeAPICall(endpointUrl string, method string, jsonData []byte) (string, er
 
 	return string(body), nil
 }
-func SwitchCurrentContext()error{
+func SwitchCurrentContext() error {
 	configFile := viper.ConfigFileUsed()
-		if configFile == "" {
-			fmt.Println("No config file found")
-			
-		}
+	if configFile == "" {
+		fmt.Println("No config file found")
 
-		// Read the existing config file
-		configData, err := ioutil.ReadFile(configFile)
-		if err != nil {
-			fmt.Printf("Failed to read config file: %v\n", err)
-			
-		}
+	}
 
-		var cfg Config
-		if err := json.Unmarshal(configData, &cfg); err != nil {
-			fmt.Printf("Failed to parse config file: %v\n", err)
-			
-		}
+	// Read the existing config file
+	configData, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		fmt.Printf("Failed to read config file: %v\n", err)
 
-		if cfg.Contexts == nil {
-			cfg.Contexts = make(map[string]ContextInfo)
-		}
+	}
 
-		// List all available contexts
-		contextNames := make([]string, 0, len(cfg.Contexts))
-		for name := range cfg.Contexts {
-			contextNames = append(contextNames, name)
-		}
-		// Prompt user to select a context
-		prompt := promptui.Select{
-			Label: "Select Context",
-			Items: contextNames,
-			Size:  10,
-			Templates: &promptui.SelectTemplates{
-				Active:   `{{ . | bold }}`,
-				Inactive: `{{ . }}`,
-				Selected: `{{ . | cyan }}`,
-				Help:     `{{ . }}`,
-			},
-		}
+	var cfg Config
+	if err := json.Unmarshal(configData, &cfg); err != nil {
+		fmt.Printf("Failed to parse config file: %v\n", err)
 
-		_, selectedContext, err := prompt.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed: %v\n", err)
-			
-		}
+	}
 
-		// Update the current-context field
-		cfg.CurrentContext = selectedContext
+	if cfg.Contexts == nil {
+		cfg.Contexts = make(map[string]ContextInfo)
+	}
 
-return nil
+	// List all available contexts
+	contextNames := make([]string, 0, len(cfg.Contexts))
+	for name := range cfg.Contexts {
+		contextNames = append(contextNames, name)
+	}
+	// Prompt user to select a context
+	prompt := promptui.Select{
+		Label: "Select Context",
+		Items: contextNames,
+		Size:  10,
+		Templates: &promptui.SelectTemplates{
+			Active:   `{{ . | bold }}`,
+			Inactive: `{{ . }}`,
+			Selected: `{{ . | cyan }}`,
+			Help:     `{{ . }}`,
+		},
+	}
+
+	_, selectedContext, err := prompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed: %v\n", err)
+
+	}
+
+	// Update the current-context field
+	cfg.CurrentContext = selectedContext
+
+	return nil
 }
 
 func getContext() (string, string, string, error) {
 	currentContext := viper.GetString("current-context")
-	if currentContext == ""{
-      fmt.Printf("Context is Not Set, Please log in\n")
-	  err := performLogin()
+	if currentContext == "" {
+		fmt.Println("Context is Not Set, Please log in")
+		err := performLogin()
 		if err != nil {
 			return "", "", "", fmt.Errorf("login failed: %v", err)
 		}
+		// Re-fetch the current context after login
+		currentContext = viper.GetString("current-context")
 	}
+
 	contexts := viper.GetStringMap("contexts")
-	contextInfo, _ := contexts[currentContext].(map[string]interface{})
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	server, _ := contextInfo["server"].(string)
-	return sbUrl, token, server, nil
+	if contexts == nil {
+		return "", "", "", fmt.Errorf("no contexts found in the configuration")
 	}
+
+	contextInfo, exists := contexts[currentContext].(map[string]interface{})
+	if !exists {
+		return "", "", "", fmt.Errorf("context '%s' does not exist", currentContext)
+	}
+
+	sbUrl, ok := contextInfo["endpoint"].(string)
+	if !ok {
+		return "", "", "", fmt.Errorf("endpoint is missing or not a string in context '%s'", currentContext)
+	}
+
+	token, ok := contextInfo["token"].(string)
+	if !ok {
+		return "", "", "", fmt.Errorf("token is missing or not a string in context '%s'", currentContext)
+	}
+
+	server, ok := contextInfo["server"].(string)
+	if !ok {
+		return "", "", "", fmt.Errorf("server is missing or not a string in context '%s'", currentContext)
+	}
+
+	return sbUrl, token, server, nil
+}
+
 func getIntegerInput(label string) (int, error) {
 	validate := func(input string) error {
 		_, err := strconv.Atoi(input)

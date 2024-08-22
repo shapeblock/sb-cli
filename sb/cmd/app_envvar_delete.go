@@ -4,15 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/cobra"
 	"net/http"
 	"os"
-	"github.com/spf13/cobra"
 )
 
 type EnvVarDeletePayload struct {
 	EnvVars []string `json:"delete"`
 }
-
 
 func GetEnvVarKeys(envVars []*EnvVarSelect) []string {
 	var vars []string
@@ -61,7 +60,7 @@ func appEnvVarDelete(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	sbUrl, token, _,err := getContext()
+	sbUrl, token, _, err := getContext()
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/env-vars/", sbUrl, appDetail.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))

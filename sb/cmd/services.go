@@ -12,16 +12,16 @@ import (
 )
 
 type Service struct {
-	UUID    string      `json:"uuid"`
-	Name    string      `json:"name"`
-	Stack   string      `json:"stack"`
-	Repo    string      `json:"repo"`
-	Ref     string      `json:"ref"`
-	Subpath string      `json:"sub_path"`
-	User    int         `json:"user"`
-	Project projectInfo `json:"project"`
-	Type    string      `json:"type"`
-	Attach  []ServiceAttach  `json:"attach"`
+	UUID    string          `json:"uuid"`
+	Name    string          `json:"name"`
+	Stack   string          `json:"stack"`
+	Repo    string          `json:"repo"`
+	Ref     string          `json:"ref"`
+	Subpath string          `json:"sub_path"`
+	User    int             `json:"user"`
+	Project projectInfo     `json:"project"`
+	Type    string          `json:"type"`
+	Attach  []ServiceAttach `json:"attach"`
 }
 type projectInfo struct {
 	Name        string `json:"Name"`

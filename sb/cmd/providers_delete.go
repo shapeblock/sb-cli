@@ -28,7 +28,7 @@ var providerDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a provider",
 	Run: func(cmd *cobra.Command, args []string) {
-	    sbUrl, token, _, err := getContext()
+		sbUrl, token, _, err := getContext()
 
 		client := &http.Client{}
 

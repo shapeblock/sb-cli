@@ -16,13 +16,6 @@ var servicelistCmd = &cobra.Command{
 
 func listServices(cmd *cobra.Command, args []string) {
 	services, err := fetchServices()
-	apps, err := fetchApps()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error fetching apps: %v\n", err)
-		return
-	}
-
-	app := selectApp(apps)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching services: %v\n", err)
 		return
@@ -34,17 +27,9 @@ func listServices(cmd *cobra.Command, args []string) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleLight)
-	t.AppendHeader(table.Row{"UUID", "Name", "Project", "Type","Attach"})
+	t.AppendHeader(table.Row{"UUID", "Name", "Project", "Type"})
 	for _, service := range services {
-		envVars,_:=fetchEnvVar(app.UUID)
-		attachValue := "Not Attached"
-		for _, envVar := range envVars {
-			if envVar.Value == service.UUID {
-				attachValue = fmt.Sprintf("%s: %s", envVar.Key, envVar.Value)
-				break
-			}
-		}
-		t.AppendRow([]interface{}{service.UUID, service.Name, service.Project.DisplayName, service.Type,attachValue})
+		t.AppendRow([]interface{}{service.UUID, service.Name, service.Project.DisplayName, service.Type})
 		t.AppendSeparator()
 	}
 	t.AppendSeparator()

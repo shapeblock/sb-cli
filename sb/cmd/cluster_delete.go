@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"net/http"
-	"os"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
+	"net/http"
+	"os"
 )
 
 var clusterDeleteCmd = &cobra.Command{
@@ -15,7 +15,7 @@ var clusterDeleteCmd = &cobra.Command{
 }
 
 func clusterDelete(cmd *cobra.Command, args []string) {
-	sbUrl, token, _,err := getContext()
+	sbUrl, token, _, err := getContext()
 	client := &http.Client{}
 	clusters, err := fetchClusters()
 	if err != nil {

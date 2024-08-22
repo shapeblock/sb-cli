@@ -1,18 +1,18 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"github.com/manifoldco/promptui"
-	"os"
+	"github.com/spf13/cobra"
+	"golang.org/x/term"
 	"io"
+	"net/http"
+	"os"
 	"strings"
 	"syscall"
-	"golang.org/x/term"
-	"github.com/spf13/cobra"
-	"bufio"
 )
 
 type SecretVarPayload struct {
@@ -25,23 +25,22 @@ var appSecretVarAddCmd = &cobra.Command{
 	Run:   appSecretVarAdd,
 }
 
-//Function to mask the secret value
+// Function to mask the secret value
 func prompt_value(promptText string, mask bool) string {
-    reader := bufio.NewReader(os.Stdin)
-    fmt.Print(promptText + ": ")
-    if mask {
-        bytePassword, err := term.ReadPassword(int(syscall.Stdin))
-        if err != nil {
-            fmt.Println("Error reading password:", err)
-            os.Exit(1)
-        }
-        fmt.Println()
-        return string(bytePassword)
-    }
-    input, _ := reader.ReadString('\n')
-    return strings.TrimSpace(input)
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print(promptText + ": ")
+	if mask {
+		bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+		if err != nil {
+			fmt.Println("Error reading password:", err)
+			os.Exit(1)
+		}
+		fmt.Println()
+		return string(bytePassword)
+	}
+	input, _ := reader.ReadString('\n')
+	return strings.TrimSpace(input)
 }
-
 
 func appSecretVarAdd(cmd *cobra.Command, args []string) {
 	apps, err := fetchApps()
@@ -51,19 +50,26 @@ func appSecretVarAdd(cmd *cobra.Command, args []string) {
 	}
 
 	app := selectApp(apps)
-
 	// Fetch existing data
-	data, err := fetchAppData(app.UUID)
+
+	existingSecretVars, err := fetchSecret(app.UUID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching app data: %v\n", err)
 		return
 	}
+	existingSecretKeys := make(map[string]bool)
+	for _, secretVar := range existingSecretVars {
+		existingSecretKeys[secretVar.Key] = true
+	}
+
+	enteredSecretKeys := make(map[string]bool)
 
 	var secretVarsToAdd []SecretVar
 
 	for {
 		keyPrompt := promptui.Prompt{
-			Label: "Enter secret var name",
+			Label:    "Enter secret var name",
+			Validate: validateNonEmpty,
 		}
 		key, err := keyPrompt.Run()
 		if err != nil {
@@ -71,14 +77,15 @@ func appSecretVarAdd(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		// Check for key conflicts
-		if keyExistsInSecrets(data.SecretVars,key) {
+		if existingSecretKeys[key] || enteredSecretKeys[key] {
 			fmt.Printf("Key '%s' already exists. Please choose a different key.\n", key)
 			continue
 		}
 
 		valuePrompt := promptui.Prompt{
-			Label: "Enter secret var value",
+			Label:    "Enter secret var value",
+			Mask:     '*',
+			Validate: validateNonEmpty,
 		}
 		value, err := valuePrompt.Run()
 		if err != nil {
@@ -91,6 +98,7 @@ func appSecretVarAdd(cmd *cobra.Command, args []string) {
 			Value: value,
 		}
 		secretVarsToAdd = append(secretVarsToAdd, secretVar)
+		enteredSecretKeys[key] = true
 
 		another := promptui.Prompt{
 			Label: "Add another secret var? (y/n)",

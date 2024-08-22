@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/spf13/cobra"
 	"net/http"
 	"os"
-	"github.com/spf13/cobra"
 )
 
 var domainDeleteCmd = &cobra.Command{
@@ -30,7 +30,7 @@ func domainDelete(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	sbUrl, token, _,err := getContext()
+	sbUrl, token, _, err := getContext()
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/custom-domains/", sbUrl, app.UUID)
 
 	req, err := http.NewRequest("DELETE", fullUrl, nil)
@@ -42,7 +42,6 @@ func domainDelete(cmd *cobra.Command, args []string) {
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
-	
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -50,7 +49,6 @@ func domainDelete(cmd *cobra.Command, args []string) {
 		return
 	}
 	defer resp.Body.Close()
-
 
 	// Check the status code of the response
 	if resp.StatusCode == http.StatusNoContent {

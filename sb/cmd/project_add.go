@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/cobra"
 	"net/http"
 	"os"
-   "time"
-	"github.com/spf13/cobra"
+	"time"
 )
 
 type ProjectCreate struct {
@@ -25,8 +25,8 @@ var createProjectCmd = &cobra.Command{
 
 func createProject(cmd *cobra.Command, args []string) {
 	// API call
-	
-    sbUrl, token, server, err := getContext()
+
+	sbUrl, token, server, err := getContext()
 	name := prompt("Project name", true)
 	description := prompt("Project description", false)
 
@@ -55,7 +55,7 @@ func createProject(cmd *cobra.Command, args []string) {
 		// Checking cluster status before creating project
 		timeout := 5 * time.Minute
 		interval := 5 * time.Second
-		if err := checkClusterStatus(clusterUUID, sbUrl,timeout,interval); err != nil {
+		if err := checkClusterStatus(clusterUUID, sbUrl, timeout, interval); err != nil {
 			fmt.Fprintf(os.Stderr, "Cluster is not ready: %v\n", err)
 			return
 		}

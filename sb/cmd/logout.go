@@ -50,10 +50,10 @@ var logoutCmd = &cobra.Command{
 				delete(contexts, currentContext)
 				cfg.Contexts = contexts
 				if err := switchContext(); err != nil {
-                    fmt.Printf("Failed to switch context: %v\n", err)
-                    
+					fmt.Printf("Failed to switch context: %v\n", err)
+
 				}
-				cfg.CurrentContext=""
+				cfg.CurrentContext = ""
 			}
 		}
 
@@ -67,7 +67,6 @@ var logoutCmd = &cobra.Command{
 			fmt.Printf("Failed to write config file: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Println("Logout successful")
 	},
 }
 

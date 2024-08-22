@@ -23,8 +23,8 @@ type AppInfo struct {
 	Services      []ServiceRef         `json:"services"`
 	CustomDomains []CustomDomainDetail `json:"custom_domains"`
 	Project       ProjectDetail        `json:"project"`
-	InitProcess   []InitProcessRead	   `json:"init_processes"`
-	WorkerProcess []WorkerProcess 	   `json:"workers"`
+	InitProcess   []InitProcessRead    `json:"init_processes"`
+	WorkerProcess []WorkerProcess      `json:"workers"`
 }
 
 var appinfoCmd = &cobra.Command{
@@ -206,14 +206,14 @@ func appInfo(cmd *cobra.Command, args []string) {
 		println()
 	}
 
-    if len(appInfo.InitProcess)  !=0{
-		initProcess:=table.NewWriter()
+	if len(appInfo.InitProcess) != 0 {
+		initProcess := table.NewWriter()
 		initProcess.SetStyle(table.StyleBold)
 		initProcess.SetOutputMirror(os.Stdout)
 		initProcess.AppendHeader(table.Row{"Init Process"})
 		initProcess.AppendRow(table.Row{"Value"})
 		initProcess.AppendSeparator()
-		for _, initProcessses:=range appInfo.InitProcess{
+		for _, initProcessses := range appInfo.InitProcess {
 			initProcess.AppendRows([]table.Row{
 				{initProcessses.Key},
 			})
@@ -222,24 +222,22 @@ func appInfo(cmd *cobra.Command, args []string) {
 		println()
 	}
 
-	if len(appInfo.WorkerProcess) !=0{
-		worker:=table.NewWriter()
+	if len(appInfo.WorkerProcess) != 0 {
+		worker := table.NewWriter()
 		worker.SetStyle(table.StyleBold)
 		worker.SetOutputMirror(os.Stdout)
-		worker.AppendHeader(table.Row{"Worker Process","Worker Process","Worker Process"},rowConfigAutoMerge)
-		worker.AppendRow(table.Row{"Cpu","Memory","Value"})
+		worker.AppendHeader(table.Row{"Worker Process", "Worker Process", "Worker Process"}, rowConfigAutoMerge)
+		worker.AppendRow(table.Row{"Cpu", "Memory", "Value"})
 		worker.AppendSeparator()
-		for _,workerProcess:=range appInfo.WorkerProcess{
+		for _, workerProcess := range appInfo.WorkerProcess {
 			worker.AppendRows([]table.Row{
-			{workerProcess.Cpu,workerProcess.Memory,workerProcess.Key},
+				{workerProcess.Cpu, workerProcess.Memory, workerProcess.Key},
 			})
 		}
-	worker.Render()
-	println()
+		worker.Render()
+		println()
 	}
 }
-
-
 
 func init() {
 	appsCmd.AddCommand(appinfoCmd)

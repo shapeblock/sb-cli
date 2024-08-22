@@ -16,6 +16,7 @@ var svcDetachCmd = &cobra.Command{
 	Short: "Detach a service from an app",
 	Run:   svcDetach,
 }
+
 func svcDetach(cmd *cobra.Command, args []string) {
 	services, err := fetchServices()
 	if err != nil {
@@ -35,8 +36,8 @@ func svcDetach(cmd *cobra.Command, args []string) {
 
 	sbUrl, token, _, err := getContext()
 
-	payload:=map[string]string{
-		"app_uuid":app.UUID,
+	payload := map[string]string{
+		"app_uuid": app.UUID,
 	}
 
 	jsonData, err := json.Marshal(payload)

@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
+	"net/http"
+	"os"
 )
 
 type EnvVarPayload struct {
@@ -20,7 +20,6 @@ var appEnvVarAddCmd = &cobra.Command{
 	Run:   appEnvVarAdd,
 }
 
-
 func appEnvVarAdd(cmd *cobra.Command, args []string) {
 	apps, err := fetchApps()
 	if err != nil {
@@ -31,30 +30,40 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 	app := selectApp(apps)
 
 	// Fetch existing data
-	data, err := fetchAppData(app.UUID)
+
+	existingEnvVars, err := fetchEnvVar(app.UUID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching app data: %v\n", err)
 		return
 	}
 
+	existingEnvKeys := make(map[string]bool)
+	for _, envVar := range existingEnvVars {
+		existingEnvKeys[envVar.Key] = true
+	}
+
+	enteredEnvKeys := make(map[string]bool)
+
 	var envVarsToAdd []EnvVar
 
 	for {
 		keyPrompt := promptui.Prompt{
-			Label: "Enter env var name",
+			Label:    "Enter env var name",
+			Validate: validateNonEmpty,
 		}
 		key, err := keyPrompt.Run()
 		if err != nil {
 			fmt.Println("Error reading input:", err)
 			continue
 		}
-		if keyExistsInEnvVars(data.EnvVars,key){
+		if existingEnvKeys[key] || enteredEnvKeys[key] {
 			fmt.Printf("Key '%s' already exists. Please choose a different key.\n", key)
 			continue
 		}
 
 		valuePrompt := promptui.Prompt{
-			Label: "Enter env var value",
+			Label:    "Enter env var value",
+			Validate: validateNonEmpty,
 		}
 		value, err := valuePrompt.Run()
 		if err != nil {
@@ -67,6 +76,7 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 			Value: value,
 		}
 		envVarsToAdd = append(envVarsToAdd, envVar)
+		enteredEnvKeys[key] = true
 
 		another := promptui.Prompt{
 			Label: "Add another env var? (y/n)",
@@ -120,7 +130,6 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 	}
 	defer resp.Body.Close()
 
-
 	if resp.StatusCode == http.StatusOK {
 		fmt.Println("Env var added successfully.")
 	} else if resp.StatusCode == http.StatusUnauthorized {
@@ -133,7 +142,6 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
 }
-
 
 func init() {
 	appEnvVarCmd.AddCommand(appEnvVarAddCmd)
