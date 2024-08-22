@@ -21,6 +21,7 @@ type ServiceRef struct {
 	Name string `json:"name"`
 	UUID string `json:"uuid"`
 	Type string `json:"type"`
+	
 }
 
 var svcCreateCmd = &cobra.Command{

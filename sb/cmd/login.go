@@ -83,6 +83,7 @@ func performLogin() error{
 		contextInfo, err := SbLogin(username, password, tokenLoginUrl)
 		if err != nil {
 			fmt.Printf("Login failed: %v\n", err)
+			os.Exit(1)
 
 		}
 
@@ -159,7 +160,7 @@ func performLogin() error{
 		}
 
 		fmt.Println("Login successful")
-        os.Exit(0)
+		os.Exit(0)
         return nil
 	}
 

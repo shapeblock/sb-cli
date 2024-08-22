@@ -234,10 +234,84 @@ func fetchVolume(appUuid string) ([]Volume, error) {
 	return vol, nil
 }
 
-func fetchSecret(appUuid string) ([]Secret, error) {
+func fetchEnvVar(appUuid string) ([]EnvVar, error) {
+	fmt.Printf("Fetching env vars for app UUID: %s\n", appUuid)
 
 	sbUrl, token, _, err := getContext()
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl, appUuid), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get context: %v", err)
+	}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/%s/env-vars/", sbUrl, appUuid), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var env []EnvVar
+	if err := json.NewDecoder(resp.Body).Decode(&env); err != nil {
+		return nil, fmt.Errorf("failed to decode response body: %v", err)
+	}
+
+	return env, nil
+}
+
+func fetchBuildVars(appUuid string) ([]BuildVar, error) {
+	fmt.Printf("Fetching build vars for app UUID: %s\n", appUuid)
+
+	sbUrl, token, _, err := getContext()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get context: %v", err)
+	}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/%s/build-vars/", sbUrl, appUuid), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var buildVars []BuildVar
+	if err := json.NewDecoder(resp.Body).Decode(&buildVars); err != nil {
+		return nil, fmt.Errorf("failed to decode response body: %v", err)
+	}
+
+	return buildVars, nil
+}
+
+func fetchSecret(appUUID string) ([]SecretVar, error) {
+	sbUrl, token, _, err := getContext()
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl, appUUID), nil)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
@@ -248,15 +322,14 @@ func fetchSecret(appUuid string) ([]Secret, error) {
 	}
 	defer resp.Body.Close()
 
-	var sec []Secret
-	if err := json.NewDecoder(resp.Body).Decode(&sec); err != nil {
+	var secrets []SecretVar
+	if err := json.NewDecoder(resp.Body).Decode(&secrets); err != nil {
 		return nil, err
 	}
 
-	return sec, nil
+	return secrets, nil
 }
 
-//function for masking the secret value
 
 func selectApp(apps []App) App {
 	templates := &promptui.SelectTemplates{
@@ -726,6 +799,61 @@ func selectWorkerProcess(workerProcesses []WorkerProcess) WorkerProcess {
 
 	return workerProcesses[index]
 }
+func fetchAppData(appUUID string) (*AppDetail, error) {
+	var data AppDetail	
+
+	// Fetch environment variables
+	envVars, err := fetchEnvVar(appUUID)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching existing env vars: %w", err)
+	}
+	data.EnvVars = envVars
+
+	// Fetch secrets
+	secrets, err := fetchSecret(appUUID)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching existing secrets: %w", err)
+	}
+	data.SecretVars = secrets
+
+	// Fetch build variables
+	buildVars, err := fetchBuildVars(appUUID)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching existing build vars: %w", err)
+	}
+	data.BuildVars = buildVars
+
+	return &data, nil
+}
+
+
+func keyExistsInEnvVars(envVars []EnvVar, key string) bool {
+	for _, envVar := range envVars {
+		if envVar.Key == key {
+			return true
+		}
+	}
+	return false
+}
+
+func keyExistsInSecrets(secrets []SecretVar, key string) bool {
+	for _, secret := range secrets {
+		if secret.Key == key {
+			return true
+		}
+	}
+	return false
+}
+
+func keyExistsInBuildVars(buildVars []BuildVar, key string) bool {
+	for _, buildVar := range buildVars {
+		if buildVar.Key == key {
+			return true
+		}
+	}
+	return false
+}
+
 
 var appsCmd = &cobra.Command{
 	Use:     "apps",

@@ -23,9 +23,12 @@ type AppInfo struct {
 	Services      []ServiceRef         `json:"services"`
 	CustomDomains []CustomDomainDetail `json:"custom_domains"`
 	Project       ProjectDetail        `json:"project"`
+	InitProcess   []InitProcessRead	   `json:"init_processes"`
+	WorkerProcess []WorkerProcess 	   `json:"workers"`
 }
 
 var appinfoCmd = &cobra.Command{
+
 	Use:   "info",
 	Short: "Get information about a specific app",
 	Long:  `Fetches and displays detailed information about a specific app by its UUID.`,
@@ -202,7 +205,41 @@ func appInfo(cmd *cobra.Command, args []string) {
 		services.Render()
 		println()
 	}
+
+    if len(appInfo.InitProcess)  !=0{
+		initProcess:=table.NewWriter()
+		initProcess.SetStyle(table.StyleBold)
+		initProcess.SetOutputMirror(os.Stdout)
+		initProcess.AppendHeader(table.Row{"Init Process"})
+		initProcess.AppendRow(table.Row{"Value"})
+		initProcess.AppendSeparator()
+		for _, initProcessses:=range appInfo.InitProcess{
+			initProcess.AppendRows([]table.Row{
+				{initProcessses.Key},
+			})
+		}
+		initProcess.Render()
+		println()
+	}
+
+	if len(appInfo.WorkerProcess) !=0{
+		worker:=table.NewWriter()
+		worker.SetStyle(table.StyleBold)
+		worker.SetOutputMirror(os.Stdout)
+		worker.AppendHeader(table.Row{"Worker Process","Worker Process","Worker Process"},rowConfigAutoMerge)
+		worker.AppendRow(table.Row{"Cpu","Memory","Value"})
+		worker.AppendSeparator()
+		for _,workerProcess:=range appInfo.WorkerProcess{
+			worker.AppendRows([]table.Row{
+			{workerProcess.Cpu,workerProcess.Memory,workerProcess.Key},
+			})
+		}
+	worker.Render()
+	println()
+	}
 }
+
+
 
 func init() {
 	appsCmd.AddCommand(appinfoCmd)

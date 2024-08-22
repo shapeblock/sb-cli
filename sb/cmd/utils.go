@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"encoding/json"
+	"io/ioutil"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/viper"
@@ -50,6 +52,59 @@ func makeAPICall(endpointUrl string, method string, jsonData []byte) (string, er
 	}
 
 	return string(body), nil
+}
+func SwitchCurrentContext()error{
+	configFile := viper.ConfigFileUsed()
+		if configFile == "" {
+			fmt.Println("No config file found")
+			
+		}
+
+		// Read the existing config file
+		configData, err := ioutil.ReadFile(configFile)
+		if err != nil {
+			fmt.Printf("Failed to read config file: %v\n", err)
+			
+		}
+
+		var cfg Config
+		if err := json.Unmarshal(configData, &cfg); err != nil {
+			fmt.Printf("Failed to parse config file: %v\n", err)
+			
+		}
+
+		if cfg.Contexts == nil {
+			cfg.Contexts = make(map[string]ContextInfo)
+		}
+
+		// List all available contexts
+		contextNames := make([]string, 0, len(cfg.Contexts))
+		for name := range cfg.Contexts {
+			contextNames = append(contextNames, name)
+		}
+		// Prompt user to select a context
+		prompt := promptui.Select{
+			Label: "Select Context",
+			Items: contextNames,
+			Size:  10,
+			Templates: &promptui.SelectTemplates{
+				Active:   `{{ . | bold }}`,
+				Inactive: `{{ . }}`,
+				Selected: `{{ . | cyan }}`,
+				Help:     `{{ . }}`,
+			},
+		}
+
+		_, selectedContext, err := prompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed: %v\n", err)
+			
+		}
+
+		// Update the current-context field
+		cfg.CurrentContext = selectedContext
+
+return nil
 }
 
 func getContext() (string, string, string, error) {

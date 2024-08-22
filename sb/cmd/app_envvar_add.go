@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
@@ -28,24 +29,65 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 	}
 
 	app := selectApp(apps)
-	var envVars []EnvVar
+
+	// Fetch existing data
+	data, err := fetchAppData(app.UUID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching app data: %v\n", err)
+		return
+	}
+
+	var envVarsToAdd []EnvVar
 
 	for {
-		envVar := EnvVar{
-			Key:   prompt("Enter env var name", true),
-			Value: prompt("Enter env var value", true),
+		keyPrompt := promptui.Prompt{
+			Label: "Enter env var name",
 		}
-		envVars = append(envVars, envVar)
+		key, err := keyPrompt.Run()
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			continue
+		}
+		if keyExistsInEnvVars(data.EnvVars,key){
+			fmt.Printf("Key '%s' already exists. Please choose a different key.\n", key)
+			continue
+		}
 
-		if prompt("Add another env var? (y/n)", false) != "y" {
+		valuePrompt := promptui.Prompt{
+			Label: "Enter env var value",
+		}
+		value, err := valuePrompt.Run()
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			continue
+		}
+
+		envVar := EnvVar{
+			Key:   key,
+			Value: value,
+		}
+		envVarsToAdd = append(envVarsToAdd, envVar)
+
+		another := promptui.Prompt{
+			Label: "Add another env var? (y/n)",
+		}
+		response, err := another.Run()
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			continue
+		}
+
+		if response != "y" {
 			break
 		}
 	}
-	if len(envVars) == 0 {
+
+	if len(envVarsToAdd) == 0 {
 		fmt.Println("No env vars changed")
 		return
 	}
-	payload := EnvVarPayload{EnvVars: envVars}
+
+	payload := EnvVarPayload{EnvVars: envVarsToAdd}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
@@ -53,12 +95,18 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	sbUrl, token, _,err := getContext()
+	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
+
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/env-vars/", sbUrl, app.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -68,9 +116,10 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
-
 	defer resp.Body.Close()
+
 
 	if resp.StatusCode == http.StatusOK {
 		fmt.Println("Env var added successfully.")
@@ -84,6 +133,7 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
 }
+
 
 func init() {
 	appEnvVarCmd.AddCommand(appEnvVarAddCmd)

@@ -15,24 +15,30 @@ var switchCmd = &cobra.Command{
 	Short: "Switch between contexts",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Load existing configuration file
-
+		err := switchContext()
+		if err != nil {
+			fmt.Printf("Context Switch failed: %v\n", err)
+		}
+	},
+}
+func switchContext() error{
 		configFile := viper.ConfigFileUsed()
 		if configFile == "" {
 			fmt.Println("No config file found")
-			return
+			
 		}
 
 		// Read the existing config file
 		configData, err := ioutil.ReadFile(configFile)
 		if err != nil {
 			fmt.Printf("Failed to read config file: %v\n", err)
-			return
+			
 		}
 
 		var cfg Config
 		if err := json.Unmarshal(configData, &cfg); err != nil {
 			fmt.Printf("Failed to parse config file: %v\n", err)
-			return
+			
 		}
 
 		if cfg.Contexts == nil {
@@ -44,7 +50,6 @@ var switchCmd = &cobra.Command{
 		for name := range cfg.Contexts {
 			contextNames = append(contextNames, name)
 		}
-
 		currentContext := cfg.CurrentContext
 
 		// Mark the current context in the list
@@ -70,26 +75,23 @@ var switchCmd = &cobra.Command{
 		_, selectedContext, err := prompt.Run()
 		if err != nil {
 			fmt.Printf("Prompt failed: %v\n", err)
-			return
+			
 		}
 
 		// Update the current-context field
 		cfg.CurrentContext = selectedContext
 
-		// Write the updated configuration back to the file
 		updatedConfig, err := json.MarshalIndent(cfg, "", "  ")
 		if err != nil {
 			fmt.Printf("Failed to marshal config: %v\n", err)
-			return
+			
 		}
 
 		if err := ioutil.WriteFile(configFile, updatedConfig, 0644); err != nil {
 			fmt.Printf("Failed to write config file: %v\n", err)
-			return
+			
 		}
-
-		fmt.Printf("Switched to context: %s\n", selectedContext)
-	},
+			return nil
 }
 
 func init() {
