@@ -54,9 +54,9 @@ func makeAPICall(endpointUrl string, method string, jsonData []byte) (string, er
 
 func getContext() (string, string, string, error) {
 	currentContext := viper.GetString("current-context")
-	if currentContext == ""{
-      fmt.Printf("Context is Not Set, Please log in\n")
-	  err := performLogin()
+	if currentContext == "" {
+		fmt.Printf("Context is Not Set, Please log in\n")
+		err := performLogin()
 		if err != nil {
 			return "", "", "", fmt.Errorf("login failed: %v", err)
 		}
@@ -67,7 +67,7 @@ func getContext() (string, string, string, error) {
 	token, _ := contextInfo["token"].(string)
 	server, _ := contextInfo["server"].(string)
 	return sbUrl, token, server, nil
-	}
+}
 func getIntegerInput(label string) (int, error) {
 	validate := func(input string) error {
 		_, err := strconv.Atoi(input)

@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"net/http"
+	"os"
 )
 
 type AppCreate struct {
@@ -32,7 +32,6 @@ func appCreate(cmd *cobra.Command, args []string) {
 		return
 	}
 
-
 	app := AppCreate{}
 	app.Name = prompt("Enter the app name", true)
 	projects, err := fetchProjects()
@@ -43,7 +42,7 @@ func appCreate(cmd *cobra.Command, args []string) {
 
 	project := selectProject(projects)
 	app.Project = project.UUID
-	
+
 	stackPrompt := promptui.Select{
 		Label: "Select Stack",
 		Items: []string{"php", "java", "python", "node", "go", "ruby", "nginx"},
@@ -61,7 +60,7 @@ func appCreate(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	sbUrl, token, _,err := getContext()
+	sbUrl, token, _, err := getContext()
 
 	fullUrl := sbUrl + "/api/apps/"
 

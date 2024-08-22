@@ -65,7 +65,7 @@ func appVolumeAdd(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	sbUrl, token, _,err := getContext()
+	sbUrl, token, _, err := getContext()
 
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/volumes/", sbUrl, app.UUID)
 

@@ -46,7 +46,7 @@ func updateEnvVarAdd(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	sbUrl, token, _,err := getContext()
+	sbUrl, token, _, err := getContext()
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/env-vars/", sbUrl, app.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
@@ -62,7 +62,6 @@ func updateEnvVarAdd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-
 
 	defer resp.Body.Close()
 

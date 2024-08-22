@@ -1,17 +1,17 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"github.com/manifoldco/promptui"
+	"github.com/spf13/cobra"
+	"golang.org/x/term"
+	"net/http"
 	"os"
 	"strings"
 	"syscall"
-	"golang.org/x/term"
-	"github.com/spf13/cobra"
-	"bufio"
 )
 
 type SecretVarPayload struct {
@@ -24,23 +24,22 @@ var appSecretVarAddCmd = &cobra.Command{
 	Run:   appSecretVarAdd,
 }
 
-//Function to mask the secret value
+// Function to mask the secret value
 func prompt_value(promptText string, mask bool) string {
-    reader := bufio.NewReader(os.Stdin)
-    fmt.Print(promptText + ": ")
-    if mask {
-        bytePassword, err := term.ReadPassword(int(syscall.Stdin))
-        if err != nil {
-            fmt.Println("Error reading password:", err)
-            os.Exit(1)
-        }
-        fmt.Println()
-        return string(bytePassword)
-    }
-    input, _ := reader.ReadString('\n')
-    return strings.TrimSpace(input)
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print(promptText + ": ")
+	if mask {
+		bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+		if err != nil {
+			fmt.Println("Error reading password:", err)
+			os.Exit(1)
+		}
+		fmt.Println()
+		return string(bytePassword)
+	}
+	input, _ := reader.ReadString('\n')
+	return strings.TrimSpace(input)
 }
-
 
 func appSecretVarAdd(cmd *cobra.Command, args []string) {
 	apps, err := fetchApps()
@@ -53,44 +52,44 @@ func appSecretVarAdd(cmd *cobra.Command, args []string) {
 	var secretVars []SecretVar
 
 	for {
-        keyPrompt := promptui.Prompt{
-            Label: "Enter secret var name",
-        }
-        key, err := keyPrompt.Run()
-        if err != nil {
-            fmt.Println("Error reading input:", err)
-            continue
-        }
+		keyPrompt := promptui.Prompt{
+			Label: "Enter secret var name",
+		}
+		key, err := keyPrompt.Run()
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			continue
+		}
 
-        valuePrompt := promptui.Prompt{
-            Label: "Enter secret var value",
-            Mask:  '*',
-        }
-        value, err := valuePrompt.Run()
-        if err != nil {
-            fmt.Println("Error reading input:", err)
-            continue
-        }
+		valuePrompt := promptui.Prompt{
+			Label: "Enter secret var value",
+			Mask:  '*',
+		}
+		value, err := valuePrompt.Run()
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			continue
+		}
 
-        secretVar := SecretVar{
-            Key:   key,
-            Value: value,
-        }
-        secretVars = append(secretVars, secretVar)
+		secretVar := SecretVar{
+			Key:   key,
+			Value: value,
+		}
+		secretVars = append(secretVars, secretVar)
 
-        another := promptui.Prompt{
-            Label: "Add another secret var? (y/n)",
-        }
-        response, err := another.Run()
-        if err != nil {
-            fmt.Println("Error reading input:", err)
-            continue
-        }
+		another := promptui.Prompt{
+			Label: "Add another secret var? (y/n)",
+		}
+		response, err := another.Run()
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			continue
+		}
 
-        if response != "y" {
-            break
-        }
-    }
+		if response != "y" {
+			break
+		}
+	}
 
 	if len(secretVars) == 0 {
 		fmt.Println("No secret vars changed")
@@ -104,7 +103,7 @@ func appSecretVarAdd(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	sbUrl, token,_, err := getContext()
+	sbUrl, token, _, err := getContext()
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl, app.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))

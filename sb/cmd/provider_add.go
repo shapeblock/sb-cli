@@ -28,8 +28,8 @@ func init() {
 }
 
 func createProvider(cmd *cobra.Command, args []string) {
-    sbUrl, _, _, err := getContext()
-	
+	sbUrl, _, _, err := getContext()
+
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
 	req.Header.Add("Content-Type", "application/json")
 

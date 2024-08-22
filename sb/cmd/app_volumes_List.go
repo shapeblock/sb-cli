@@ -25,7 +25,7 @@ func appVolumeList(cmd *cobra.Command, args []string) {
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleLight)
 	t.AppendHeader(table.Row{"App UUID", "App Name", "Volume Name", "Mount path", "Volume Size"})
-	
+
 	for _, app := range apps {
 		vol, err := fetchVolume(app.UUID)
 		if err != nil {

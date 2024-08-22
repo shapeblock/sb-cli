@@ -17,8 +17,8 @@ var appDeleteCmd = &cobra.Command{
 
 func appDelete(cmd *cobra.Command, args []string) {
 	client := &http.Client{}
-	
-	sbUrl, token, _,err := getContext()
+
+	sbUrl, token, _, err := getContext()
 	apps, err := fetchApps()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching apps: %v\n", err)

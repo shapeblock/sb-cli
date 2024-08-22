@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 )
-type VolumeDeletePayload struct{
 
+type VolumeDeletePayload struct {
 	Volumes []string `json:"delete"`
 }
 
@@ -21,6 +21,7 @@ func VolumesKeys(volVars []*VolumeSelect) []string {
 	}
 	return vars
 }
+
 var volumeDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a volume",
@@ -28,7 +29,7 @@ var volumeDeleteCmd = &cobra.Command{
 }
 
 func volumeDelete(cmd *cobra.Command, args []string) {
-	sbUrl, token,_, err := getContext()
+	sbUrl, token, _, err := getContext()
 
 	apps, err := fetchApps()
 	if err != nil {
@@ -40,13 +41,13 @@ func volumeDelete(cmd *cobra.Command, args []string) {
 
 	// Fetch volumes associated with the selected app
 
-    appDetail, err := fetchAppDetail(app.UUID)
+	appDetail, err := fetchAppDetail(app.UUID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching volumes: %v\n", err)
 		return
 	}
 	volVars := ConvertVolumeToSelect(appDetail.Volumes)
-	volVars,err=selectVolVars(0,volVars)
+	volVars, err = selectVolVars(0, volVars)
 	if err != nil {
 		fmt.Printf("Selection failed %v\n", err)
 		return

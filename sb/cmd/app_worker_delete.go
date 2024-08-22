@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"fmt"
-	"net/http"
-	"os"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/spf13/cobra"
+	"net/http"
+	"os"
 )
 
 type WorkerProcessDeletePayload struct {
@@ -19,8 +19,8 @@ var deleteWorkerCmd = &cobra.Command{
 	Run:   appWorkerDelete,
 }
 
-func appWorkerDelete(cmd *cobra.Command, args []string){
-	sbUrl, token,_, err := getContext()
+func appWorkerDelete(cmd *cobra.Command, args []string) {
+	sbUrl, token, _, err := getContext()
 
 	apps, err := fetchApps()
 	if err != nil {
@@ -52,7 +52,7 @@ func appWorkerDelete(cmd *cobra.Command, args []string){
 	if err != nil {
 		fmt.Println("error marshaling JSON:", err)
 		return
-	}	
+	}
 
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/worker/", sbUrl, app.UUID)
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
@@ -86,6 +86,6 @@ func appWorkerDelete(cmd *cobra.Command, args []string){
 	}
 }
 
-func init(){
+func init() {
 	appWorkerCmd.AddCommand(deleteWorkerCmd)
-	}
+}

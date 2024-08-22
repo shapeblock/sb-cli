@@ -38,7 +38,7 @@ func appShell(cmd *cobra.Command, args []string) {
 	app := selectApp(apps)
 
 	// API call
-	sbUrl, token, _,err := getContext()
+	sbUrl, token, _, err := getContext()
 	fullUrl := fmt.Sprintf("%s/apps/%s/shell-info/", sbUrl, app.UUID)
 
 	req, err := http.NewRequest("GET", fullUrl, nil)

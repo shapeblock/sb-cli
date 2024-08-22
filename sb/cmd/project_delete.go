@@ -49,8 +49,8 @@ func selectProject(projects []Project) Project {
 }
 
 func projectDelete(cmd *cobra.Command, args []string) {
-	
-    sbUrl, token, _, err := getContext()
+
+	sbUrl, token, _, err := getContext()
 	client := &http.Client{}
 	projects, err := fetchProjects()
 	if err != nil {

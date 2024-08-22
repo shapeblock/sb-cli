@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/cobra"
 	"net/http"
 	"os"
-	"github.com/spf13/cobra"
 )
 
 type EnvVarPayload struct {
@@ -18,7 +18,6 @@ var appEnvVarAddCmd = &cobra.Command{
 	Short: "Add an env var.",
 	Run:   appEnvVarAdd,
 }
-
 
 func appEnvVarAdd(cmd *cobra.Command, args []string) {
 	apps, err := fetchApps()
@@ -53,7 +52,7 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	sbUrl, token, _,err := getContext()
+	sbUrl, token, _, err := getContext()
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/env-vars/", sbUrl, app.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))

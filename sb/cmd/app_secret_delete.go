@@ -4,15 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/cobra"
 	"net/http"
 	"os"
-	"github.com/spf13/cobra"
 )
 
 type SecretVarDeletePayload struct {
 	SecretVars []string `json:"delete"`
 }
-
 
 func GetSecretVarKeys(secretVars []*SecretSelect) []string {
 	var vars []string
@@ -30,7 +29,7 @@ var appSecretVarDeleteCmd = &cobra.Command{
 
 func appSecretVarDelete(cmd *cobra.Command, args []string) {
 	apps, err := fetchApps()
-	if (err != nil) {
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching apps: %v\n", err)
 		return
 	}
@@ -62,7 +61,7 @@ func appSecretVarDelete(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	sbUrl, token, _,err := getContext()
+	sbUrl, token, _, err := getContext()
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/secrets/", sbUrl, appDetail.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
@@ -94,9 +93,7 @@ func appSecretVarDelete(cmd *cobra.Command, args []string) {
 		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
 	}
 
-	
 }
-
 
 func init() {
 	appSecretCmd.AddCommand(appSecretVarDeleteCmd)
