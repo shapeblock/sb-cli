@@ -7,22 +7,21 @@ import (
 	"os"
 	"strings"
 
-	//"io"
-
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
 type Service struct {
-	UUID    string      `json:"uuid"`
-	Name    string      `json:"name"`
-	Stack   string      `json:"stack"`
-	Repo    string      `json:"repo"`
-	Ref     string      `json:"ref"`
-	Subpath string      `json:"sub_path"`
-	User    int         `json:"user"`
-	Project projectInfo `json:"project"`
-	Type    string      `json:"type"`
+	UUID    string          `json:"uuid"`
+	Name    string          `json:"name"`
+	Stack   string          `json:"stack"`
+	Repo    string          `json:"repo"`
+	Ref     string          `json:"ref"`
+	Subpath string          `json:"sub_path"`
+	User    int             `json:"user"`
+	Project projectInfo     `json:"project"`
+	Type    string          `json:"type"`
+	Attach  []ServiceAttach `json:"attach"`
 }
 type projectInfo struct {
 	Name        string `json:"Name"`
@@ -50,7 +49,6 @@ func fetchServices() ([]Service, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
 	var services []Service
 	if err := json.NewDecoder(resp.Body).Decode(&services); err != nil {
 		return nil, err
@@ -62,8 +60,8 @@ func fetchServices() ([]Service, error) {
 func selectService(services []Service) Service {
 	templates := &promptui.SelectTemplates{
 		Label:    "{{ . }}?",
-		Active:   "\U0001F449 {{ .Name | cyan }}",
-		Inactive: "  {{ .Name | cyan }}",
+		Active:   "\U0001F449 {{ .Name | cyan }}({{.Project.DisplayName | red }})",
+		Inactive: "  {{ .Name | cyan }}({{.Project.DisplayName | red }})",
 		Selected: "\U0001F3C1 {{ .Name | red | cyan }}",
 	}
 

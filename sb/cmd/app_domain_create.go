@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"net/http"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 type CustomDomain struct {
@@ -64,14 +65,6 @@ func createDomain(cmf *cobra.Command, args []string) {
 		fmt.Println(err)
 		return
 	}
-
-	defer resp.Body.Close()
-
-	/* bodyBytes, err := io.ReadAll(resp.Body)
-	   if err != nil {
-	       return
-	   }
-	   fmt.Println("Response Body:", string(bodyBytes))*/
 
 	// Check the status code of the response
 	if resp.StatusCode == http.StatusOK {

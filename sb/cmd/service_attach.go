@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 
@@ -71,7 +72,14 @@ func svcAttach(cmd *cobra.Command, args []string) {
 	}
 
 	defer resp.Body.Close()
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading response body: %v\n", err)
+		return
+	}
 
+	fmt.Printf("Response Status: %s\n", resp.Status)
+	fmt.Printf("Response Body: %s\n", responseBody)
 	if resp.StatusCode == http.StatusCreated {
 		fmt.Println("Service attached successfully.")
 	} else if resp.StatusCode == http.StatusUnauthorized {

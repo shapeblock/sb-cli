@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/manifoldco/promptui"
 	"net/http"
 	"os"
 
@@ -21,7 +22,6 @@ var buildEnvAddCmd = &cobra.Command{
 }
 
 func buildAdd(cmd *cobra.Command, args []string) {
-
 	apps, err := fetchApps()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching apps: %v\n", err)
@@ -29,29 +29,68 @@ func buildAdd(cmd *cobra.Command, args []string) {
 	}
 
 	app := selectApp(apps)
-	var buildVars []BuildVar
+
+	// Fetch existing data
+	data, err := fetchAppData(app.UUID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching app data: %v\n", err)
+		return
+	}
+
+	var buildVarsToAdd []BuildVar
 
 	for {
-		buildVar := BuildVar{
-			Key:   prompt("Enter  build  var name", true),
-			Value: prompt("Enter  build  var value", true),
+		keyPrompt := promptui.Prompt{
+			Label: "Enter build var name",
 		}
-		buildVars = append(buildVars, buildVar)
+		key, err := keyPrompt.Run()
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			continue
+		}
 
-		if prompt("Add another build var? (y/n)", false) != "y" {
+		// Check for key conflicts
+		if keyExistsInBuildVars(data.BuildVars, key) {
+			fmt.Printf("Key '%s' already exists. Please choose a different key.\n", key)
+			continue
+		}
+
+		valuePrompt := promptui.Prompt{
+			Label: "Enter build var value",
+		}
+		value, err := valuePrompt.Run()
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			continue
+		}
+
+		buildVar := BuildVar{
+			Key:   key,
+			Value: value,
+		}
+		buildVarsToAdd = append(buildVarsToAdd, buildVar)
+
+		another := promptui.Prompt{
+			Label: "Add another build var? (y/n)",
+		}
+		response, err := another.Run()
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			continue
+		}
+
+		if response != "y" {
 			break
 		}
 	}
-	if len(buildVars) == 0 {
+
+	if len(buildVarsToAdd) == 0 {
 		fmt.Println("No build vars changed")
 		return
-
 	}
-	payload := BuildPayload{BuildVars: buildVars}
-	jsonData, err := json.Marshal(payload)
 
-	//fmt.Println("Data being sent to the server:")
-	//fmt.Println(string(jsonData))
+	payload := BuildPayload{BuildVars: buildVarsToAdd}
+	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
 		return
@@ -59,11 +98,17 @@ func buildAdd(cmd *cobra.Command, args []string) {
 
 	// API call
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
+
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/build-vars/", sbUrl, app.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -73,8 +118,8 @@ func buildAdd(cmd *cobra.Command, args []string) {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
-
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
