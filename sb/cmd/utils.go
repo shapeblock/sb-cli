@@ -110,7 +110,8 @@ func SwitchCurrentContext() error {
 func getContext() (string, string, string, error) {
 	currentContext := viper.GetString("current-context")
 	if currentContext == "" {
-		fmt.Println("Context is Not Set, Please log in")
+		fmt.Printf("Context is Not Set, Please log in\n")
+
 		err := performLogin()
 		if err != nil {
 			return "", "", "", fmt.Errorf("login failed: %v", err)

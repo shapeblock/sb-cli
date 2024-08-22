@@ -58,7 +58,7 @@ func performLogin() error {
 		sbUrl = fmt.Sprintf("https://%s", url)
 	}
 
-	tokenLoginUrl := fmt.Sprintf("%s/api/auth/token/", sbUrl)
+	tokenLoginUrl := fmt.Sprintf("%s/api/auth/login/", sbUrl)
 
 	prompt = promptui.Prompt{
 		Label: "Email (enter your username if you're using the open source version)",
@@ -162,10 +162,7 @@ func performLogin() error {
 		return fmt.Errorf("Failed to reload viper config: %v\n", err)
 
 	}
-
 	fmt.Println("Login successful")
-
-	//os.Exit(0)
 	return nil
 }
 
@@ -198,7 +195,7 @@ func SbLogin(username, password, sbUrl string) (ContextInfo, error) {
 	// Check response status code
 	if resp.StatusCode == http.StatusOK {
 		var loginResponse struct {
-			Token string `json:"token"`
+			Token string `json:"key"`
 		}
 		if err := json.Unmarshal(responseBody, &loginResponse); err != nil {
 			return ContextInfo{}, err

@@ -30,12 +30,12 @@ func listServices(cmd *cobra.Command, args []string) {
 	t.AppendHeader(table.Row{"UUID", "Name", "Project", "Type"})
 	for _, service := range services {
 		t.AppendRow([]interface{}{service.UUID, service.Name, service.Project.DisplayName, service.Type})
+
 		t.AppendSeparator()
-	}
-	t.AppendSeparator()
-	t.Render()
-	if err != nil {
-		fmt.Println("Unable to parse response")
+		t.Render()
+		if err != nil {
+			fmt.Println("Unable to parse response")
+		}
 	}
 }
 

@@ -56,6 +56,7 @@ func buildAdd(cmd *cobra.Command, args []string) {
 		}
 
 		if existingBuildKeys[key] || enteredBuildKeys[key] {
+
 			fmt.Printf("Key '%s' already exists. Please choose a different key.\n", key)
 			continue
 		}

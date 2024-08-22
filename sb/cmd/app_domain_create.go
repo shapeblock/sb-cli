@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"net/http"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 type CustomDomain struct {
@@ -78,7 +79,6 @@ func createDomain(cmf *cobra.Command, args []string) {
 	}
 
 	defer resp.Body.Close()
-
 	// Check the status code of the response
 	if resp.StatusCode == http.StatusOK {
 		fmt.Println("New Custom Domain created successfully.")

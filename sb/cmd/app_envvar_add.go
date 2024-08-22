@@ -56,7 +56,9 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 			fmt.Println("Error reading input:", err)
 			continue
 		}
+
 		if existingEnvKeys[key] || enteredEnvKeys[key] {
+
 			fmt.Printf("Key '%s' already exists. Please choose a different key.\n", key)
 			continue
 		}
