@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"net/http"
-	"os"
 )
 
 type AppCreate struct {
@@ -60,7 +62,7 @@ func appCreate(cmd *cobra.Command, args []string) {
 	}
 
 	// API call
-	sbUrl, token, _, err := getContext()
+	sbUrl, token, _, _ := getContext()
 
 	fullUrl := sbUrl + "/api/apps/"
 
@@ -83,7 +85,20 @@ func appCreate(cmd *cobra.Command, args []string) {
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		fmt.Println("Authorization failed. Check your token.")
 	} else if resp.StatusCode == http.StatusBadRequest {
-		fmt.Println("Unable to create app, bad request.")
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Printf("Error reading response body: %v\n", err)
+			return
+		}
+		var errorResponse ErrorResponse
+		if err := json.Unmarshal(body, &errorResponse); err != nil {
+			fmt.Printf("Error unmarshaling response body: %v\n", err)
+			return
+		}
+
+		for _, errMsg := range errorResponse.NonFieldErrors {
+			fmt.Printf("unable to create app: %s\n", errMsg)
+		}
 	} else if resp.StatusCode == http.StatusInternalServerError {
 		fmt.Println("Unable to create app, internal server error.")
 	} else {

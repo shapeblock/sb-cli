@@ -21,6 +21,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type ErrorResponse struct {
+	NonFieldErrors []string `json:"non_field_errors"`
+}
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "sb-cli",

@@ -10,12 +10,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 var createDeployCmd = &cobra.Command{
@@ -89,47 +89,53 @@ func createDeployment(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	//fmt.Println("Pod Info:")
-	//fmt.Printf("Deployment UUID: %s\n", deploymentResponse.UUID)
-
-	// TODO: if follow flag is given, stream deployment logs
 	if follow {
-		time.Sleep(10 * time.Second)
-		fullUrl = fmt.Sprintf("%s/deployments/%s/pod-info/", sbUrl, deploymentResponse.UUID)
+		const maxAttempts = 10
+		const delay = 10 * time.Second
 
-		req, err = http.NewRequest("GET", fullUrl, nil)
-		if err != nil {
-			fmt.Println(err)
+		s := spinner.New(spinner.CharSets[14], 100*time.Millisecond) // Initialize spinner
+		s.Start()                                                    // Start spinner
+
+		for attempt := 1; attempt <= maxAttempts; attempt++ {
+			fullUrl = fmt.Sprintf("%s/deployments/%s/pod-info/", sbUrl, deploymentResponse.UUID)
+
+			req, err = http.NewRequest("GET", fullUrl, nil)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			req.Header.Add("Content-Type", "application/json")
+			req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+
+			client = &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			defer resp.Body.Close()
+			var podInfo PodInfo
+			if err := json.NewDecoder(resp.Body).Decode(&podInfo); err != nil {
+				fmt.Printf("Unable to decode podinfo from response: %v\n", err)
+				os.Exit(1)
+			}
+
+			decodedKubeConfig, err := base64.StdEncoding.DecodeString(podInfo.KubeConfig)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to decode kubeconfig: %v\n", err)
+				os.Exit(1)
+			}
+			if err := tailPodLogs(podInfo.Name, string(decodedKubeConfig), podInfo.Namespace); err != nil {
+				// fmt.Fprintf(os.Stderr, "Failed to tail logs: %v\n", err)
+				time.Sleep(delay)
+				continue
+			}
+			break
 		}
 
-		req.Header.Add("Content-Type", "application/json")
-		req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
-
-		client = &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		defer resp.Body.Close()
-		var podInfo PodInfo
-		if err := json.NewDecoder(resp.Body).Decode(&podInfo); err != nil {
-			fmt.Printf("Unable to decode podinfo from response: %v\n", err)
-			os.Exit(1)
-		}
-
-		decodedKubeConfig, err := base64.StdEncoding.DecodeString(podInfo.KubeConfig)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to decode kubeconfig: %v\n", err)
-			os.Exit(1)
-		}
-		if err := tailPodLogs(podInfo.Name, string(decodedKubeConfig), podInfo.Namespace); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to tail logs: %v\n", err)
-			os.Exit(1)
-		}
-		// TODO: fetch helm status
-
+		s.Stop() // Stop spinner
+		// TODO: check on Helm status
 	}
 
 }
@@ -178,8 +184,8 @@ func streamLogsWithRetry(clientset *kubernetes.Clientset, namespace, podName, co
 		if err == nil {
 			break
 		}
-		fmt.Printf("Retrying log stream for container %s in pod %s: %v\n", containerName, podName, err)
-		time.Sleep(2 * time.Second)
+		// fmt.Printf("Retrying log stream for container %s in pod %s: %v\n", containerName, podName, err)
+		time.Sleep(5 * time.Second)
 	}
 	return nil
 }
