@@ -1,18 +1,13 @@
 package cmd
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
-	"io"
 	"net/http"
 	"os"
-	"strings"
-	"syscall"
 )
 
 type SecretVarPayload struct {
@@ -23,23 +18,6 @@ var appSecretVarAddCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Add an secret var.",
 	Run:   appSecretVarAdd,
-}
-
-// Function to mask the secret value
-func prompt_value(promptText string, mask bool) string {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print(promptText + ": ")
-	if mask {
-		bytePassword, err := term.ReadPassword(int(syscall.Stdin))
-		if err != nil {
-			fmt.Println("Error reading password:", err)
-			os.Exit(1)
-		}
-		fmt.Println()
-		return string(bytePassword)
-	}
-	input, _ := reader.ReadString('\n')
-	return strings.TrimSpace(input)
 }
 
 func appSecretVarAdd(cmd *cobra.Command, args []string) {
@@ -77,7 +55,18 @@ func appSecretVarAdd(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		if existingSecretKeys[key] || enteredSecretKeys[key] {
+		existingEnvVars, err := fetchEnvVar(app.UUID)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching app data: %v\n", err)
+			return
+		}
+
+		existingEnvKeys := make(map[string]bool)
+		for _, envVar := range existingEnvVars {
+			existingEnvKeys[envVar.Key] = true
+		}
+
+		if existingSecretKeys[key] || enteredSecretKeys[key] || existingEnvKeys[key] {
 			fmt.Printf("Key '%s' already exists. Please choose a different key.\n", key)
 			continue
 		}
@@ -151,13 +140,6 @@ func appSecretVarAdd(cmd *cobra.Command, args []string) {
 		return
 	}
 	defer resp.Body.Close()
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-		return
-	}
-	fmt.Println("Response Body:", string(bodyBytes))
 
 	if resp.StatusCode == http.StatusOK {
 		fmt.Println("Secret var added successfully.")
