@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"net/http"
@@ -25,15 +27,51 @@ func domainDelete(cmd *cobra.Command, args []string) {
 	}
 
 	app := selectApp(apps)
-	if len(apps) == 0 {
+	if app.UUID == "" {
 		fmt.Println("No app selected.")
 		return
 	}
 
+	// Fetch custom domains for the selected app
+
+	customDomains, err := fetchCustomDomains(app.UUID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching custom domains: %v\n", err)
+		return
+	}
+	if len(customDomains) == 0 {
+		fmt.Println("No custom domains available to delete.")
+		return
+	}
+
+	// Allow the user to select a custom domain to delete
+
+	selectedDomain := selectCustomDomain(customDomains)
+	if selectedDomain.Domain == "" {
+		fmt.Println("No custom domain selected.")
+		return
+	}
+
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
+
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/custom-domains/", sbUrl, app.UUID)
 
-	req, err := http.NewRequest("DELETE", fullUrl, nil)
+	// Create payload to delete the specific domain
+
+	payload := map[string]interface{}{
+		"delete": []string{selectedDomain.Domain},
+	}
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error marshaling JSON: %v\n", err)
+		return
+	}
+
+	req, err := http.NewRequest("POST", fullUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating request: %v\n", err)
 		return
@@ -51,8 +89,8 @@ func domainDelete(cmd *cobra.Command, args []string) {
 	defer resp.Body.Close()
 
 	// Check the status code of the response
-	if resp.StatusCode == http.StatusNoContent {
-		fmt.Println("Custom Domain deleted successfully.")
+	if resp.StatusCode == http.StatusOK {
+		fmt.Printf("Custom Domain '%s' deleted successfully.\n", selectedDomain.Domain)
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		fmt.Println("Authorization failed. Check your token.")
 	} else if resp.StatusCode == http.StatusBadRequest {

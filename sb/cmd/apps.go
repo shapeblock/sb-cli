@@ -796,6 +796,78 @@ func selectWorkerProcess(workerProcesses []WorkerProcess) WorkerProcess {
 
 	return workerProcesses[index]
 }
+func fetchCustomDomains(appUUID string) ([]CustomDomain, error) {
+	sbUrl, token, _, err := getContext()
+	if err != nil {
+		return nil, fmt.Errorf("error getting context: %v", err)
+	}
+
+	// Construct the URL to fetch custom domains
+	fullUrl := fmt.Sprintf("%s/api/apps/%s/custom-domains/", sbUrl, appUUID)
+
+	// Create the HTTP GET request
+	req, err := http.NewRequest("GET", fullUrl, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %v", err)
+	}
+
+	// Set the necessary headers
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+
+	// Send the request using the default client
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error sending request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Check the status code of the response
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	// Parse the response body
+	var domains []CustomDomain
+	if err := json.NewDecoder(resp.Body).Decode(&domains); err != nil {
+		return nil, fmt.Errorf("error decoding response: %v", err)
+	}
+
+	return domains, nil
+}
+
+func selectCustomDomain(domains []CustomDomain) CustomDomain {
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "\U0001F449 {{ .Domain | cyan }}",
+		Inactive: "  {{ .Domain | cyan }}",
+		Selected: "\U0001F3C1 {{ .Domain | red | cyan }}",
+	}
+
+	searcher := func(input string, index int) bool {
+		domain := domains[index]
+		name := strings.Replace(strings.ToLower(domain.Domain), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input)
+	}
+
+	prompt := promptui.Select{
+		Label:     "Select Custom Domain",
+		Items:     domains,
+		Templates: templates,
+		Searcher:  searcher,
+	}
+
+	index, _, err := prompt.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Prompt failed %v\n", err)
+		return CustomDomain{}
+	}
+
+	return domains[index]
+}
 
 // validateNonEmpty ensures the input is not empty
 func validateNonEmpty(input string) error {

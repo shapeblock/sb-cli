@@ -84,63 +84,65 @@ func appWorkerAdd(cmd *cobra.Command, args []string) {
 		fmt.Println("Invalid memory limit. Format should be like '512Mi' or '1Gi'.")
 		return
 	}
-
+	workerProcessExists := false
 	for _, worker := range existingWorkerProcesses {
 		if worker.Key == key {
-			fmt.Printf("Worker process with key '%s' already exists.\n", key)
+			workerProcessExists = true
+			fmt.Printf("Worker process with key '%s' already exists. Please enter a different Worker process.\n", key)
 			return
 		}
 	}
 
-	process := WorkerProcess{
-		Key:    key,
-		Memory: memory,
-		Cpu:    cpu,
-	}
+	if !workerProcessExists {
+		process := WorkerProcess{
+			Key:    key,
+			Memory: memory,
+			Cpu:    cpu,
+		}
 
-	payload := WorkerProcessPayload{
-		WorkerProcesses: []WorkerProcess{process},
-	}
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		fmt.Println("error marshaling JSON:", err)
-		return
-	}
-	fullUrl := fmt.Sprintf("%s/api/apps/%s/worker/", sbUrl, app.UUID)
+		payload := WorkerProcessPayload{
+			WorkerProcesses: []WorkerProcess{process},
+		}
+		jsonData, err := json.Marshal(payload)
+		if err != nil {
+			fmt.Println("error marshaling JSON:", err)
+			return
+		}
+		fullUrl := fmt.Sprintf("%s/api/apps/%s/worker/", sbUrl, app.UUID)
 
-	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+		req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 
-	// Set the necessary headers
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+		// Set the necessary headers
+		req.Header.Add("Content-Type", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
-	// Send the request using the default client
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer resp.Body.Close()
+		// Send the request using the default client
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer resp.Body.Close()
 
-	// Check the status code of the response
-	if resp.StatusCode == http.StatusOK {
-		fmt.Println("Worker Process created successfully.")
-	} else if resp.StatusCode == http.StatusUnauthorized {
-		fmt.Println("Authorization failed. Check your token.")
-	} else if resp.StatusCode == http.StatusBadRequest {
-		fmt.Println("Unable to create Worker Process, bad request.")
-	} else if resp.StatusCode == http.StatusInternalServerError {
-		fmt.Println("Unable to create Worker Process, internal server error.")
-	} else {
-		fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
+		// Check the status code of the response
+		if resp.StatusCode == http.StatusOK {
+			fmt.Println("Worker Process created successfully.")
+		} else if resp.StatusCode == http.StatusUnauthorized {
+			fmt.Println("Authorization failed. Check your token.")
+		} else if resp.StatusCode == http.StatusBadRequest {
+			fmt.Println("Unable to create Worker Process, bad request.")
+		} else if resp.StatusCode == http.StatusInternalServerError {
+			fmt.Println("Unable to create Worker Process, internal server error.")
+		} else {
+			fmt.Printf("Unexpected status code: %d\n", resp.StatusCode)
+		}
 	}
 }
-
 func init() {
 	appWorkerCmd.AddCommand(createWorkerCmd)
 }

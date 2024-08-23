@@ -42,6 +42,17 @@ func appSecretVarAdd(cmd *cobra.Command, args []string) {
 
 	enteredSecretKeys := make(map[string]bool)
 
+	existingEnvVars, err := fetchEnvVar(app.UUID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching app data: %v\n", err)
+		return
+	}
+
+	existingEnvKeys := make(map[string]bool)
+	for _, envVar := range existingEnvVars {
+		existingEnvKeys[envVar.Key] = true
+	}
+
 	var secretVarsToAdd []SecretVar
 
 	for {
@@ -53,17 +64,6 @@ func appSecretVarAdd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			fmt.Println("Error reading input:", err)
 			continue
-		}
-
-		existingEnvVars, err := fetchEnvVar(app.UUID)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error fetching app data: %v\n", err)
-			return
-		}
-
-		existingEnvKeys := make(map[string]bool)
-		for _, envVar := range existingEnvVars {
-			existingEnvKeys[envVar.Key] = true
 		}
 
 		if existingSecretKeys[key] || enteredSecretKeys[key] || existingEnvKeys[key] {

@@ -12,16 +12,17 @@ import (
 )
 
 type Service struct {
-	UUID    string          `json:"uuid"`
-	Name    string          `json:"name"`
-	Stack   string          `json:"stack"`
-	Repo    string          `json:"repo"`
-	Ref     string          `json:"ref"`
-	Subpath string          `json:"sub_path"`
-	User    int             `json:"user"`
-	Project projectInfo     `json:"project"`
-	Type    string          `json:"type"`
-	Attach  []ServiceAttach `json:"attach"`
+	UUID    string      `json:"uuid"`
+	Name    string      `json:"name"`
+	User    int         `json:"user"`
+	Project projectInfo `json:"project"`
+	Type    string      `json:"type"`
+	Apps    []AppRef    `json:"apps"`
+}
+
+type AppRef struct {
+	UUID string `json:"uuid"`
+	Name string `json:"name"`
 }
 type projectInfo struct {
 	Name        string `json:"Name"`
@@ -49,6 +50,7 @@ func fetchServices() ([]Service, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
 	var services []Service
 	if err := json.NewDecoder(resp.Body).Decode(&services); err != nil {
 		return nil, err
