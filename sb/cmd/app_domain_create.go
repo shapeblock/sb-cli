@@ -34,7 +34,19 @@ func createDomain(cmf *cobra.Command, args []string) {
 	}
 
 	app := selectApp(apps)
+	existingCustomDomain := AppDetail{}
+	existingCustomDomain, err = fetchAppDetail(app.UUID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching app detail: %v\n", err)
+		return
+	}
 	domainName := prompt("Custom Domain", true)
+	for _, customDomain := range existingCustomDomain.CustomDomains {
+		if customDomain.Domain == domainName {
+			fmt.Printf("Custom Domain '%s' already exists.\n", domainName)
+			return
+		}
+	}
 	customDomainPayload := CustomDomainPayload{
 		CustomDomains: []CustomDomain{
 			{Domain: domainName},
@@ -66,6 +78,7 @@ func createDomain(cmf *cobra.Command, args []string) {
 		return
 	}
 
+	defer resp.Body.Close()
 	// Check the status code of the response
 	if resp.StatusCode == http.StatusOK {
 		fmt.Println("New Custom Domain created successfully.")

@@ -158,9 +158,11 @@ func performLogin() error {
 		fmt.Printf("Failed to write config file: %v\n", err)
 
 	}
+	if err := viper.ReadInConfig(); err != nil {
+		return fmt.Errorf("Failed to reload viper config: %v\n", err)
 
+	}
 	fmt.Println("Login successful")
-	os.Exit(0)
 	return nil
 }
 

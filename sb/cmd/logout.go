@@ -67,7 +67,6 @@ var logoutCmd = &cobra.Command{
 			fmt.Printf("Failed to write config file: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Println("Logout successful")
 	},
 }
 

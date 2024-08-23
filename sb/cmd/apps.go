@@ -235,7 +235,6 @@ func fetchVolume(appUuid string) ([]Volume, error) {
 }
 
 func fetchEnvVar(appUuid string) ([]EnvVar, error) {
-	fmt.Printf("Fetching env vars for app UUID: %s\n", appUuid)
 
 	sbUrl, token, _, err := getContext()
 	if err != nil {
@@ -269,7 +268,6 @@ func fetchEnvVar(appUuid string) ([]EnvVar, error) {
 }
 
 func fetchBuildVars(appUuid string) ([]BuildVar, error) {
-	fmt.Printf("Fetching build vars for app UUID: %s\n", appUuid)
 
 	sbUrl, token, _, err := getContext()
 	if err != nil {
@@ -798,58 +796,13 @@ func selectWorkerProcess(workerProcesses []WorkerProcess) WorkerProcess {
 
 	return workerProcesses[index]
 }
-func fetchAppData(appUUID string) (*AppDetail, error) {
-	var data AppDetail
 
-	// Fetch environment variables
-	envVars, err := fetchEnvVar(appUUID)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching existing env vars: %w", err)
+// validateNonEmpty ensures the input is not empty
+func validateNonEmpty(input string) error {
+	if input == "" {
+		return fmt.Errorf("this field cannot be empty")
 	}
-	data.EnvVars = envVars
-
-	// Fetch secrets
-	secrets, err := fetchSecret(appUUID)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching existing secrets: %w", err)
-	}
-	data.SecretVars = secrets
-
-	// Fetch build variables
-	buildVars, err := fetchBuildVars(appUUID)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching existing build vars: %w", err)
-	}
-	data.BuildVars = buildVars
-
-	return &data, nil
-}
-
-func keyExistsInEnvVars(envVars []EnvVar, key string) bool {
-	for _, envVar := range envVars {
-		if envVar.Key == key {
-			return true
-		}
-	}
-	return false
-}
-
-func keyExistsInSecrets(secrets []SecretVar, key string) bool {
-	for _, secret := range secrets {
-		if secret.Key == key {
-			return true
-		}
-	}
-	return false
-}
-
-func keyExistsInBuildVars(buildVars []BuildVar, key string) bool {
-	for _, buildVar := range buildVars {
-		if buildVar.Key == key {
-			return true
-		}
-	}
-	return false
+	return nil
 }
 
 var appsCmd = &cobra.Command{

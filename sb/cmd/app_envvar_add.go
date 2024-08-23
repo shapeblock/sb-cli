@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
-
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
+	"net/http"
+	"os"
 )
 
 type EnvVarPayload struct {
@@ -31,30 +30,51 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 	app := selectApp(apps)
 
 	// Fetch existing data
-	data, err := fetchAppData(app.UUID)
+
+	existingEnvVars, err := fetchEnvVar(app.UUID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching app data: %v\n", err)
 		return
 	}
 
+	existingEnvKeys := make(map[string]bool)
+	for _, envVar := range existingEnvVars {
+		existingEnvKeys[envVar.Key] = true
+	}
+
+	enteredEnvKeys := make(map[string]bool)
+
 	var envVarsToAdd []EnvVar
 
 	for {
 		keyPrompt := promptui.Prompt{
-			Label: "Enter env var name",
+			Label:    "Enter env var name",
+			Validate: validateNonEmpty,
 		}
 		key, err := keyPrompt.Run()
 		if err != nil {
 			fmt.Println("Error reading input:", err)
 			continue
 		}
-		if keyExistsInEnvVars(data.EnvVars, key) {
+		existingSecretVars, err := fetchSecret(app.UUID)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching app data: %v\n", err)
+			return
+		}
+		existingSecretKeys := make(map[string]bool)
+		for _, secretVar := range existingSecretVars {
+			existingSecretKeys[secretVar.Key] = true
+		}
+
+		if existingEnvKeys[key] || enteredEnvKeys[key] || existingSecretKeys[key] {
+
 			fmt.Printf("Key '%s' already exists. Please choose a different key.\n", key)
 			continue
 		}
 
 		valuePrompt := promptui.Prompt{
-			Label: "Enter env var value",
+			Label:    "Enter env var value",
+			Validate: validateNonEmpty,
 		}
 		value, err := valuePrompt.Run()
 		if err != nil {
@@ -67,6 +87,7 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 			Value: value,
 		}
 		envVarsToAdd = append(envVarsToAdd, envVar)
+		enteredEnvKeys[key] = true
 
 		another := promptui.Prompt{
 			Label: "Add another env var? (y/n)",

@@ -36,8 +36,10 @@ type ClusterNode struct {
 }
 
 func fetchClusters() ([]ClusterDetail, error) {
-
 	sbUrl, token, _, err := getContext()
+	if err != nil || sbUrl == "" || token == "" {
+		return nil, fmt.Errorf("Invalid context: %v", err)
+	}
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
 	//log.Printf("Token: %s", token)
 	req.Header.Add("Content-Type", "application/json")

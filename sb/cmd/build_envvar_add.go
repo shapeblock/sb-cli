@@ -31,17 +31,23 @@ func buildAdd(cmd *cobra.Command, args []string) {
 	app := selectApp(apps)
 
 	// Fetch existing data
-	data, err := fetchAppData(app.UUID)
+	existingBuildVars, err := fetchBuildVars(app.UUID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching app data: %v\n", err)
 		return
 	}
+	existingBuildKeys := make(map[string]bool)
+	for _, buildVar := range existingBuildVars {
+		existingBuildKeys[buildVar.Key] = true
+	}
+	enteredBuildKeys := make(map[string]bool)
 
 	var buildVarsToAdd []BuildVar
 
 	for {
 		keyPrompt := promptui.Prompt{
-			Label: "Enter build var name",
+			Label:    "Enter build var name",
+			Validate: validateNonEmpty,
 		}
 		key, err := keyPrompt.Run()
 		if err != nil {
@@ -49,14 +55,15 @@ func buildAdd(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		// Check for key conflicts
-		if keyExistsInBuildVars(data.BuildVars, key) {
+		if existingBuildKeys[key] || enteredBuildKeys[key] {
+
 			fmt.Printf("Key '%s' already exists. Please choose a different key.\n", key)
 			continue
 		}
 
 		valuePrompt := promptui.Prompt{
-			Label: "Enter build var value",
+			Label:    "Enter build var value",
+			Validate: validateNonEmpty,
 		}
 		value, err := valuePrompt.Run()
 		if err != nil {
@@ -69,6 +76,7 @@ func buildAdd(cmd *cobra.Command, args []string) {
 			Value: value,
 		}
 		buildVarsToAdd = append(buildVarsToAdd, buildVar)
+		enteredBuildKeys[key] = true
 
 		another := promptui.Prompt{
 			Label: "Add another build var? (y/n)",

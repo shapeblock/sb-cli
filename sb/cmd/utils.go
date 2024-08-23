@@ -111,18 +111,43 @@ func getContext() (string, string, string, error) {
 	currentContext := viper.GetString("current-context")
 	if currentContext == "" {
 		fmt.Printf("Context is Not Set, Please log in\n")
+
 		err := performLogin()
 		if err != nil {
 			return "", "", "", fmt.Errorf("login failed: %v", err)
 		}
+		// Re-fetch the current context after login
+		currentContext = viper.GetString("current-context")
 	}
+
 	contexts := viper.GetStringMap("contexts")
-	contextInfo, _ := contexts[currentContext].(map[string]interface{})
-	sbUrl, _ := contextInfo["endpoint"].(string)
-	token, _ := contextInfo["token"].(string)
-	server, _ := contextInfo["server"].(string)
+	if contexts == nil {
+		return "", "", "", fmt.Errorf("no contexts found in the configuration")
+	}
+
+	contextInfo, exists := contexts[currentContext].(map[string]interface{})
+	if !exists {
+		return "", "", "", fmt.Errorf("context '%s' does not exist", currentContext)
+	}
+
+	sbUrl, ok := contextInfo["endpoint"].(string)
+	if !ok {
+		return "", "", "", fmt.Errorf("endpoint is missing or not a string in context '%s'", currentContext)
+	}
+
+	token, ok := contextInfo["token"].(string)
+	if !ok {
+		return "", "", "", fmt.Errorf("token is missing or not a string in context '%s'", currentContext)
+	}
+
+	server, ok := contextInfo["server"].(string)
+	if !ok {
+		return "", "", "", fmt.Errorf("server is missing or not a string in context '%s'", currentContext)
+	}
+
 	return sbUrl, token, server, nil
 }
+
 func getIntegerInput(label string) (int, error) {
 	validate := func(input string) error {
 		_, err := strconv.Atoi(input)

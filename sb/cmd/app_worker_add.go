@@ -49,6 +49,13 @@ func appWorkerAdd(cmd *cobra.Command, args []string) {
 	sbUrl, token, _, err := getContext()
 	defaultCPU := "1000m"
 	defaultMemory := "1Gi"
+
+	existingWorkerProcesses, err := fetchWorkerProcesses(app.UUID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching worker processes: %v\n", err)
+		return
+	}
+
 	key := prompt("Enter you Worker process Name", true)
 	cpu_value := promptui.Prompt{
 		Label:   "Enter Your CPU Limit for your Worker process",
@@ -76,6 +83,13 @@ func appWorkerAdd(cmd *cobra.Command, args []string) {
 	if !validateMemory(memory) {
 		fmt.Println("Invalid memory limit. Format should be like '512Mi' or '1Gi'.")
 		return
+	}
+
+	for _, worker := range existingWorkerProcesses {
+		if worker.Key == key {
+			fmt.Printf("Worker process with key '%s' already exists.\n", key)
+			return
+		}
 	}
 
 	process := WorkerProcess{

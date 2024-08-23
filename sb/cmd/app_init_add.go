@@ -38,9 +38,20 @@ func appInitAdd(cmd *cobra.Command, args []string) {
 
 	app := selectApp(apps)
 	sbUrl, token, _, err := getContext()
+	existingInitProcesses, err := fetchInitProcesses(app.UUID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching init processes: %v\n", err)
+		return
+	}
 	key := prompt("Enter you process Name", true)
 	process := InitProcess{
 		Key: key,
+	}
+	for _, process := range existingInitProcesses {
+		if process.Key == key {
+			fmt.Printf("Init process with key '%s' already exists.\n", key)
+			return
+		}
 	}
 	payload := InitProcessPayload{
 		InitProcesses: []InitProcess{process},
