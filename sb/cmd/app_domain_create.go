@@ -43,7 +43,7 @@ func createDomain(cmf *cobra.Command, args []string) {
 	domainName := prompt("Custom Domain", true)
 	for _, customDomain := range existingCustomDomain.CustomDomains {
 		if customDomain.Domain == domainName {
-			fmt.Printf("Custom Domain '%s' already exists.\n", domainName)
+			fmt.Printf("Custom Domain '%s' already exists. Please enter a different domain name.\n", domainName)
 			return
 		}
 	}

@@ -46,6 +46,16 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 
 	var envVarsToAdd []EnvVar
 
+	existingSecretVars, err := fetchSecret(app.UUID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching app data: %v\n", err)
+		return
+	}
+	existingSecretKeys := make(map[string]bool)
+	for _, secretVar := range existingSecretVars {
+		existingSecretKeys[secretVar.Key] = true
+	}
+
 	for {
 		keyPrompt := promptui.Prompt{
 			Label:    "Enter env var name",
@@ -55,15 +65,6 @@ func appEnvVarAdd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			fmt.Println("Error reading input:", err)
 			continue
-		}
-		existingSecretVars, err := fetchSecret(app.UUID)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error fetching app data: %v\n", err)
-			return
-		}
-		existingSecretKeys := make(map[string]bool)
-		for _, secretVar := range existingSecretVars {
-			existingSecretKeys[secretVar.Key] = true
 		}
 
 		if existingEnvKeys[key] || enteredEnvKeys[key] || existingSecretKeys[key] {

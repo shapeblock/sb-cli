@@ -51,6 +51,7 @@ func fetchServices() ([]Service, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
 	var services []Service
 	if err := json.NewDecoder(resp.Body).Decode(&services); err != nil {
 		return nil, err
