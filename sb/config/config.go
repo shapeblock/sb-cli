@@ -53,7 +53,7 @@ func Init() {
 	}
 
 	viper.SetConfigFile(GetConfigPath())
-	viper.SetDefault("endpoint", "https://shapeblock.com")
+	viper.SetDefault("endpoint", "https://api.shapeblock.com")
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)

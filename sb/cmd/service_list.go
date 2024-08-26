@@ -27,7 +27,7 @@ func listServices(cmd *cobra.Command, args []string) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleLight)
-	t.AppendHeader(table.Row{"UUID", "Name", "Project", "Type"})
+	t.AppendHeader(table.Row{"UUID", "Name", "Project", "Type", "Attached Apps"})
 	for _, service := range services {
 		t.AppendRow([]interface{}{service.UUID, service.Name, service.Project.DisplayName, service.Type})
 

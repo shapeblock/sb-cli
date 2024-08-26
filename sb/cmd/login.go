@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -58,8 +58,6 @@ func performLogin() error {
 		sbUrl = fmt.Sprintf("https://%s", url)
 	}
 
-	tokenLoginUrl := fmt.Sprintf("%s/api/auth/login/", sbUrl)
-
 	prompt = promptui.Prompt{
 		Label: "Email (enter your username if you're using the open source version)",
 	}
@@ -80,13 +78,6 @@ func performLogin() error {
 
 	}
 
-	contextInfo, err := SbLogin(username, password, tokenLoginUrl)
-	if err != nil {
-		fmt.Printf("Login failed: %v\n", err)
-		os.Exit(1)
-
-	}
-
 	// Determine the server type (OSS or SaaS)
 	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/auth/registration/", sbUrl), nil)
 	req.Header.Add("Content-Type", "application/json")
@@ -104,13 +95,21 @@ func performLogin() error {
 		serverType = "saas"
 	}
 
+	token, err := SbLogin(username, password, sbUrl, serverType)
+	if err != nil {
+		fmt.Printf("Login failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	contextInfo := ContextInfo{}
+	contextInfo.Token = token
 	contextInfo.Server = serverType
 	contextInfo.Endpoint = sbUrl
 	contextInfo.Timestamp = time.Now().Format(time.RFC3339)
 
 	// Load the existing configuration manually
 	configFile := viper.ConfigFileUsed()
-	configData, err := ioutil.ReadFile(configFile)
+	configData, err := os.ReadFile(configFile)
 	if err != nil {
 		fmt.Printf("Failed to read config file: %v\n", err)
 
@@ -151,45 +150,51 @@ func performLogin() error {
 	updatedConfig, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		fmt.Printf("Failed to marshal config: %v\n", err)
-
+		os.Exit(1)
 	}
 
-	if err := ioutil.WriteFile(configFile, updatedConfig, 0644); err != nil {
+	if err := os.WriteFile(configFile, updatedConfig, 0644); err != nil {
 		fmt.Printf("Failed to write config file: %v\n", err)
-
+		os.Exit(1)
 	}
 	if err := viper.ReadInConfig(); err != nil {
-		return fmt.Errorf("Failed to reload viper config: %v\n", err)
-
+		fmt.Printf("failed to reload viper config: %v\n", err)
+		os.Exit(1)
 	}
 	fmt.Println("Login successful")
 	return nil
 }
 
-// SbLogin function to authenticate and return ContextInfo
-func SbLogin(username, password, sbUrl string) (ContextInfo, error) {
+// SbLogin function to authenticate and return Token
+func SbLogin(username, password, sbUrl string, serverType string) (string, error) {
 	data := map[string]string{
 		"username": username,
 		"password": password,
 	}
 
+	var tokenLoginUrl string
+	if serverType == "oss" {
+		tokenLoginUrl = fmt.Sprintf("%s/api/auth/login/", sbUrl)
+	} else {
+		tokenLoginUrl = fmt.Sprintf("%s/api/auth/token/", sbUrl)
+	}
 	// Marshal the data into JSON
 	body, err := json.Marshal(data)
 	if err != nil {
-		return ContextInfo{}, err
+		return "", err
 	}
 
 	// Perform HTTP POST request to token-login endpoint
-	resp, err := http.Post(sbUrl, "application/json", bytes.NewBuffer(body))
+	resp, err := http.Post(tokenLoginUrl, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		return ContextInfo{}, err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	// Read response body
-	responseBody, err := ioutil.ReadAll(resp.Body)
+	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return ContextInfo{}, err
+		return "", err
 	}
 
 	// Check response status code
@@ -198,18 +203,13 @@ func SbLogin(username, password, sbUrl string) (ContextInfo, error) {
 			Token string `json:"key"`
 		}
 		if err := json.Unmarshal(responseBody, &loginResponse); err != nil {
-			return ContextInfo{}, err
+			return "", err
 		}
-
-		// Return the ContextInfo with the token
-		return ContextInfo{
-			Token: loginResponse.Token,
-		}, nil
-
+		return loginResponse.Token, nil
 	}
 
 	// Handle non-200 status codes
-	return ContextInfo{}, fmt.Errorf("login failed with status: %s", resp.Status)
+	return "", fmt.Errorf("login failed with status: %s", resp.Status)
 
 }
 
