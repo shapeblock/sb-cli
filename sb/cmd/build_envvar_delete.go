@@ -66,6 +66,11 @@ func buildDelete(cmd *cobra.Command, args []string) {
 
 	// API call
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
+
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/build-vars/", sbUrl, appDetail.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))

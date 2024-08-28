@@ -38,7 +38,7 @@ type ClusterNode struct {
 func fetchClusters() ([]ClusterDetail, error) {
 	sbUrl, token, _, err := getContext()
 	if err != nil || sbUrl == "" || token == "" {
-		return nil, fmt.Errorf("Invalid context: %v", err)
+		return nil, fmt.Errorf("invalid context: %v", err)
 	}
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
 	//log.Printf("Token: %s", token)
@@ -49,7 +49,7 @@ func fetchClusters() ([]ClusterDetail, error) {
 	resp, err := client.Do(req)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("This instance cannot manage clusters.")
+		return nil, fmt.Errorf("this instance cannot manage clusters")
 	}
 
 	if err != nil {
@@ -135,7 +135,7 @@ func checkClusterStatus(clusterUUID, sbUrl string, timeout, interval time.Durati
 	}
 
 	time.Sleep(interval)
-	return fmt.Errorf("Wait!")
+	return fmt.Errorf("Wait")
 }
 
 var clustersCmd = &cobra.Command{

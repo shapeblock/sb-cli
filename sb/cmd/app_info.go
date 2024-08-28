@@ -45,6 +45,10 @@ func appInfo(cmd *cobra.Command, args []string) {
 
 	app := selectApp(apps)
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
 	fullUrl := fmt.Sprintf("%s/api/apps/%s/", sbUrl, app.UUID)
 
 	req, err := http.NewRequest("GET", fullUrl, nil)

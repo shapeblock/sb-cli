@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/manifoldco/promptui"
-	"github.com/spf13/cobra"
 	"net/http"
 	"os"
+
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/cobra"
 )
 
 var clusterDeleteCmd = &cobra.Command{
@@ -16,6 +17,10 @@ var clusterDeleteCmd = &cobra.Command{
 
 func clusterDelete(cmd *cobra.Command, args []string) {
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
 	client := &http.Client{}
 	clusters, err := fetchClusters()
 	if err != nil {

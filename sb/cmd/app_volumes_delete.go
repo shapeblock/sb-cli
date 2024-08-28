@@ -30,6 +30,10 @@ var volumeDeleteCmd = &cobra.Command{
 
 func volumeDelete(cmd *cobra.Command, args []string) {
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
 
 	apps, err := fetchApps()
 	if err != nil {

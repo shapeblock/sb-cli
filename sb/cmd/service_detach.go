@@ -35,6 +35,10 @@ func svcDetach(cmd *cobra.Command, args []string) {
 	app := selectApp(apps)
 
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
 
 	payload := map[string]string{
 		"app_uuid": app.UUID,

@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/manifoldco/promptui"
-	"github.com/spf13/cobra"
 	"io"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/cobra"
 )
 
 type Node struct {
@@ -65,6 +66,10 @@ func selectProvider(providers []Provider) Provider {
 func execute(cmd *cobra.Command, args []string) {
 	cluster := Cluster{}
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/clusters/", sbUrl), nil)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -171,6 +176,10 @@ func prompt(label string, required bool) string {
 
 func fetchAndSelectRegion(cloud string) string {
 	sbUrl, _, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return cloud
+	}
 	url := fmt.Sprintf("%s/api/providers/region-choices/%s/", sbUrl, cloud)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -240,6 +249,10 @@ func selectNodeSize(sizes [][]string) string {
 
 func fetchNodeSizes(cloud string) [][]string {
 	sbUrl, _, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return nil
+	}
 	url := fmt.Sprintf("%s/api/providers/size-choices/%s/", sbUrl, cloud)
 	resp, err := http.Get(url)
 	if err != nil {

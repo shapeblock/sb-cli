@@ -49,6 +49,9 @@ func svcCreate(cmd *cobra.Command, args []string) {
 	}
 
 	_, svcType, err := svcTypePrompt.Run()
+	if err != nil {
+		fmt.Println("Error reading input:", err)
+	}
 
 	svc.Type = svcType
 
@@ -59,7 +62,10 @@ func svcCreate(cmd *cobra.Command, args []string) {
 
 	// API call
 	sbUrl, token, _, err := getContext()
-
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
 	fullUrl := sbUrl + "/api/services/"
 
 	req, err := http.NewRequest("POST", fullUrl, bytes.NewBuffer(jsonData))

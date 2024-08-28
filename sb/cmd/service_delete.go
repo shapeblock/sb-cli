@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/manifoldco/promptui"
 	"net/http"
 	"os"
+
+	"github.com/manifoldco/promptui"
 
 	"github.com/spf13/cobra"
 )
@@ -43,6 +44,10 @@ func svcDelete(cmd *cobra.Command, args []string) {
 
 	// API call
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
 
 	fullUrl := fmt.Sprintf("%s/api/services/%s/", sbUrl, service.UUID)
 

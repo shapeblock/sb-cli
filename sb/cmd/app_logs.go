@@ -36,6 +36,10 @@ func appLogs(cmd *cobra.Command, args []string) {
 
 	// API call
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
 	fullUrl := fmt.Sprintf("%s/apps/%s/shell-info/", sbUrl, app.UUID)
 
 	req, err := http.NewRequest("GET", fullUrl, nil)

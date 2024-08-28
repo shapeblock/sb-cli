@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/manifoldco/promptui"
-	"github.com/spf13/cobra"
 	"net/http"
 	"os"
+
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/cobra"
 )
 
 var svcAttachCmd = &cobra.Command{
@@ -43,6 +44,9 @@ func svcAttach(cmd *cobra.Command, args []string) {
 	}
 
 	_, exposedAs, err := exposedAsPrompt.Run()
+	if err != nil {
+		fmt.Println("Error reading input:", err)
+	}
 
 	svcAttachPayload.ExposedAs = exposedAs
 
@@ -53,6 +57,11 @@ func svcAttach(cmd *cobra.Command, args []string) {
 
 	// API call
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
+
 	fullUrl := fmt.Sprintf("%s/api/services/%s/attach/", sbUrl, service.UUID)
 
 	req, err := http.NewRequest("PATCH", fullUrl, bytes.NewBuffer(jsonData))

@@ -38,6 +38,10 @@ func appInitAdd(cmd *cobra.Command, args []string) {
 
 	app := selectApp(apps)
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
 	existingInitProcesses, err := fetchInitProcesses(app.UUID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching init processes: %v\n", err)

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -23,6 +24,10 @@ type Provider struct {
 func fetchProviders() ([]Provider, error) {
 
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return []Provider{}, nil
+	}
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/providers/", sbUrl), nil)
 
@@ -33,7 +38,7 @@ func fetchProviders() ([]Provider, error) {
 	resp, err := client.Do(req)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("This instance cannot manage providers.")
+		return nil, fmt.Errorf("this instance cannot manage providers")
 	}
 
 	if err != nil {

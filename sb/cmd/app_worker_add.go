@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/manifoldco/promptui"
-	"github.com/spf13/cobra"
 	"net/http"
 	"os"
 	"regexp"
+
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/cobra"
 )
 
 type WorkerProcess struct {
@@ -47,6 +48,10 @@ func appWorkerAdd(cmd *cobra.Command, args []string) {
 
 	app := selectApp(apps)
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
 	defaultCPU := "1000m"
 	defaultMemory := "1Gi"
 

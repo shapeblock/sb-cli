@@ -31,6 +31,9 @@ var registerCmd = &cobra.Command{
 		}
 
 		url, err := prompt.Run()
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+		}
 
 		var sbUrl string
 		if strings.HasPrefix(url, "http") {

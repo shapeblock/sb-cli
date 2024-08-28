@@ -166,6 +166,10 @@ func ConvertSelectToBuildVars(buildVars []*BuildSelect) []BuildVar {
 func fetchAppDetail(appUuid string) (AppDetail, error) {
 
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return AppDetail{}, err
+	}
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/%s/", sbUrl, appUuid), nil)
 
 	req.Header.Add("Content-Type", "application/json")
@@ -189,6 +193,10 @@ func fetchAppDetail(appUuid string) (AppDetail, error) {
 func fetchApps() ([]App, error) {
 
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return []App{}, err
+	}
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/", sbUrl), nil)
 	req.Header.Add("Content-Type", "application/json")
@@ -215,6 +223,10 @@ func fetchApps() ([]App, error) {
 func fetchVolume(appUuid string) ([]Volume, error) {
 
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return []Volume{}, err
+	}
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/apps/%s/volumes/", sbUrl, appUuid), nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))

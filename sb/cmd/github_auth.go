@@ -37,6 +37,10 @@ func GenerateRandomState(length int) (string, error) {
 
 func fetchGithubClientCredentials() (GithubClient, error) {
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return GithubClient{}, nil
+	}
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/github-client/", sbUrl), nil)
 
@@ -47,7 +51,7 @@ func fetchGithubClientCredentials() (GithubClient, error) {
 	resp, err := client.Do(req)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return GithubClient{}, fmt.Errorf("this installation cannnot be integrated with Github. Please add a GITHUB_CLIENT_KEY and GITHUB_CLIENT_SECRET and re-deploy the application.")
+		return GithubClient{}, fmt.Errorf("this installation cannnot be integrated with Github. Please add a GITHUB_CLIENT_KEY and GITHUB_CLIENT_SECRET and re-deploy the application")
 	}
 
 	if err != nil {
@@ -65,6 +69,10 @@ func fetchGithubClientCredentials() (GithubClient, error) {
 
 func sendGithubTokenToBackend(githubToken string) error {
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return nil
+	}
 
 	data := map[string]string{
 		"github_token": githubToken,

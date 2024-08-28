@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"net/http"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 type WorkerProcessDeletePayload struct {
@@ -21,7 +22,10 @@ var deleteWorkerCmd = &cobra.Command{
 
 func appWorkerDelete(cmd *cobra.Command, args []string) {
 	sbUrl, token, _, err := getContext()
-
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
 	apps, err := fetchApps()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching apps: %v\n", err)

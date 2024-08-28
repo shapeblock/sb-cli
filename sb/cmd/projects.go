@@ -20,6 +20,9 @@ type Project struct {
 
 func fetchProjects() ([]Project, error) {
 	sbUrl, token, _, err := getContext()
+	if err != nil {
+		return nil, fmt.Errorf("error getting context: %v", err)
+	}
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/projects/", sbUrl), nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))

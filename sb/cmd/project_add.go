@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 type ProjectCreate struct {
@@ -27,6 +28,10 @@ func createProject(cmd *cobra.Command, args []string) {
 	// API call
 
 	sbUrl, token, server, err := getContext()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting context: %v\n", err)
+		return
+	}
 	name := prompt("Project name", true)
 	description := prompt("Project description", false)
 

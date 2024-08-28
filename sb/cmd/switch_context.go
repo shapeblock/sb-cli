@@ -92,6 +92,7 @@ func switchContext() error {
 		fmt.Printf("Failed to write config file: %v\n", err)
 
 	}
+	fmt.Printf("Switched to context: %s\n", selectedContext)
 	return nil
 }
 
