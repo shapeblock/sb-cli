@@ -5,6 +5,7 @@ go 1.22.0
 toolchain go1.22.2
 
 require (
+	github.com/briandowns/spinner v1.23.1
 	github.com/jedib0t/go-pretty/v6 v6.5.8
 	github.com/manifoldco/promptui v0.9.0
 	github.com/spf13/cobra v1.8.0
@@ -17,7 +18,6 @@ require (
 )
 
 require (
-	github.com/briandowns/spinner v1.23.1 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.12.0 // indirect
