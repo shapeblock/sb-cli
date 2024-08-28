@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/manifoldco/promptui"
 	"net/http"
 	"os"
 
@@ -27,6 +28,18 @@ func svcDelete(cmd *cobra.Command, args []string) {
 		return
 	}
 	service := selectService(services)
+	confirmationPrompt := promptui.Prompt{
+		Label:     "Delete Service",
+		IsConfirm: true,
+		Default:   "",
+	}
+
+	_, err = confirmationPrompt.Run()
+
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		return
+	}
 
 	// API call
 	sbUrl, token, _, err := getContext()
