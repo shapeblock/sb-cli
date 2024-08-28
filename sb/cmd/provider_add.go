@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
+	"net/http"
 )
 
 type CloudProvider struct {
