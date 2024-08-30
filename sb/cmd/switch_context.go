@@ -14,8 +14,15 @@ var switchCmd = &cobra.Command{
 	Use:   "switch",
 	Short: "Switch between contexts",
 	Run: func(cmd *cobra.Command, args []string) {
+		helpFlag, _ := cmd.Flags().GetBool("help")
+		if helpFlag {
+			// Display the help message and exit
+			cmd.Help()
+			return
+		}
+
 		// Load existing configuration file
-		cmd.Help()
+
 		err := switchContext()
 		if err != nil {
 			fmt.Printf("Context Switch failed: %v\n", err)
@@ -23,28 +30,47 @@ var switchCmd = &cobra.Command{
 	},
 }
 
-func switchContext() error {
-	configFile := viper.ConfigFileUsed()
-	if configFile == "" {
-		fmt.Println("No config file found")
-
-	}
-
-	// Read the existing config file
+// readConfig reads and parses the configuration file.
+func readConfig(configFile string) (Config, error) {
 	configData, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		fmt.Printf("Failed to read config file: %v\n", err)
-
+		return Config{}, fmt.Errorf("failed to read config file: %v", err)
 	}
 
 	var cfg Config
 	if err := json.Unmarshal(configData, &cfg); err != nil {
-		fmt.Printf("Failed to parse config file: %v\n", err)
+		return Config{}, fmt.Errorf("failed to parse config file: %v", err)
+	}
+	return cfg, nil
+}
 
+func switchContext() error {
+	configFile := viper.ConfigFileUsed()
+	if configFile == "" {
+		return fmt.Errorf("no config file found")
+
+	}
+	cfg, err := readConfig(configFile)
+	if err != nil {
+		return err
 	}
 
 	if cfg.Contexts == nil {
 		cfg.Contexts = make(map[string]ContextInfo)
+	}
+	// Check if the current context is set
+	if cfg.CurrentContext == "" {
+		fmt.Println("Current Context is Not Set, please log in")
+		err := performLogin()
+		if err != nil {
+			fmt.Printf("Login failed: %v\n", err)
+			return err
+		}
+		// Reload the config after login
+		cfg, err = readConfig(configFile)
+		if err != nil {
+			return err
+		}
 	}
 
 	// List all available contexts
@@ -55,10 +81,9 @@ func switchContext() error {
 	currentContext := cfg.CurrentContext
 
 	// Mark the current context in the list
-	green := promptui.Styler(promptui.FGGreen)
 	for i, name := range contextNames {
 		if name == currentContext {
-			contextNames[i] = fmt.Sprintf("%s (current)", green(name))
+			contextNames[i] = fmt.Sprintf("%s (current)", name)
 		}
 	}
 
@@ -68,7 +93,7 @@ func switchContext() error {
 		Items: contextNames,
 		Size:  10,
 		Templates: &promptui.SelectTemplates{
-			Active:   `{{ . | bold}}`,
+			Active:   `{{ . | bold }}`,
 			Inactive: `{{ . | red }}`,
 			Selected: `{{ . | cyan }}`,
 			Help:     `{{ . }}`,
@@ -78,6 +103,7 @@ func switchContext() error {
 	_, selectedContext, err := prompt.Run()
 	if err != nil {
 		fmt.Printf("Prompt failed: %v\n", err)
+		return nil
 
 	}
 
