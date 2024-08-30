@@ -66,6 +66,9 @@ func appShell(cmd *cobra.Command, args []string) {
 		fmt.Printf("Unable to decode podinfo from response: %v\n", err)
 		os.Exit(1)
 	}
+	fmt.Printf("Received pod name: %s\n", shellInfo.Name)
+	fmt.Printf("Namespace: %s\n", shellInfo.Namespace)
+	fmt.Printf("KubeConfig: %s\n", shellInfo.KubeConfig)
 
 	decodedKubeConfig, err := base64.StdEncoding.DecodeString(shellInfo.KubeConfig)
 	if err != nil {

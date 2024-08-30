@@ -15,6 +15,7 @@ var switchCmd = &cobra.Command{
 	Short: "Switch between contexts",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Load existing configuration file
+		cmd.Help()
 		err := switchContext()
 		if err != nil {
 			fmt.Printf("Context Switch failed: %v\n", err)
@@ -54,9 +55,10 @@ func switchContext() error {
 	currentContext := cfg.CurrentContext
 
 	// Mark the current context in the list
+	green := promptui.Styler(promptui.FGGreen)
 	for i, name := range contextNames {
 		if name == currentContext {
-			contextNames[i] = fmt.Sprintf("%s (current)", name)
+			contextNames[i] = fmt.Sprintf("%s (current)", green(name))
 		}
 	}
 
@@ -66,8 +68,8 @@ func switchContext() error {
 		Items: contextNames,
 		Size:  10,
 		Templates: &promptui.SelectTemplates{
-			Active:   `{{ . | bold }}`,
-			Inactive: `{{ . }}`,
+			Active:   `{{ . | bold}}`,
+			Inactive: `{{ . | red }}`,
 			Selected: `{{ . | cyan }}`,
 			Help:     `{{ . }}`,
 		},
@@ -77,6 +79,12 @@ func switchContext() error {
 	if err != nil {
 		fmt.Printf("Prompt failed: %v\n", err)
 
+	}
+
+	// Check if the selected context is the same as the current context
+	if selectedContext == fmt.Sprintf("%s (current)", currentContext) {
+		fmt.Println("The chosen context is already the current context.")
+		return nil
 	}
 
 	// Update the current-context field
