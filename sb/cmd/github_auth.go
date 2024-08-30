@@ -13,6 +13,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
 	"sync"
 	"time"
 
@@ -143,30 +145,54 @@ func init() {
 }
 
 func authenticateWithGitHub(cmd *cobra.Command, args []string) {
-	wg.Add(1)
+	// Create a channel to signal when the server is ready
+	serverReady := make(chan bool)
+
 	// Start an HTTP server to handle the OAuth2 callback
 	http.HandleFunc("/callback", handleGitHubCallback)
-	go http.ListenAndServe(":8080", nil)
-
-	// Redirect the user to GitHub for authentication
-	url := oauthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
-	fmt.Printf("Visit the URL for the auth dialog: %v\n", url)
-
-	done := make(chan struct{})
+	server := &http.Server{Addr: ":8080"}
 	go func() {
-		wg.Wait()
-		close(done)
+		serverReady <- true
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			fmt.Printf("HTTP server error: %v\n", err)
+		}
 	}()
 
+	// Wait for the server to be ready
+	<-serverReady
+
+	// Generate the GitHub authentication URL
+	url := oauthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
+	fmt.Printf("Please visit the following URL to authenticate with GitHub:\n%v\n", url)
+
+	// Attempt to open the URL in the default browser
+	err := openBrowser(url)
+	if err != nil {
+		fmt.Printf("Failed to open the URL automatically. Please copy and paste it into your browser manually.\n")
+	}
+
+	// Wait for the callback to be handled or timeout
 	select {
-	case <-done:
-		// Callback was handled
-		fmt.Println("OAuth flow completed.")
 	case <-time.After(5 * time.Minute):
-		// Timeout after 5 minutes
 		fmt.Println("Timeout waiting for OAuth callback.")
+		server.Shutdown(context.Background())
 		os.Exit(1)
 	}
+}
+
+func openBrowser(url string) error {
+	var err error
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	return err
 }
 
 func handleGitHubCallback(w http.ResponseWriter, r *http.Request) {
@@ -189,5 +215,8 @@ func handleGitHubCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("Authentication successful! You can close this window."))
-	os.Exit(0)
+	go func() {
+		time.Sleep(2 * time.Second) // Give the browser time to display the message
+		os.Exit(0)
+	}()
 }
